@@ -59,7 +59,7 @@ body = ft.Container(
                 alignment=ft.MainAxisAlignment.SPACE_EVENLY,
             ),
             width=700,
-            height=550,
+            height=600,
         ),
     ],
         alignment=ft.MainAxisAlignment.SPACE_EVENLY,
