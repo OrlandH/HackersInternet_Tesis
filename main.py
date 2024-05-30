@@ -1,76 +1,93 @@
 import flet as ft
 
-body =  ft.Container(
-            ft.Row([
+body = ft.Container(
+    ft.Row([
+        ft.Container(
+            ft.Column(controls=[
+                # Contenedor con el logo
                 ft.Container(
-                    ft.Column(controls= [
-                        # Contenedor con el logo
-                        ft.Container(
-                            ft.Image(src='logo.png', width=150,),
-                            padding= ft.padding.only(100,20)
-                            ),
-                        # Texto Bienvenida
-                        ft.Text('Bienvenido', width=360, size=30, weight ='w900', text_align = 'center'),
-                        # Contenedor con el nombre de usuario y contraseña
-                        ft.Container(
-                            ft.TextField(width=300,height=40, label="Nombre de Usuario"),
-                            padding= ft.padding.only(35, 10)
-                            ),
-                        ft.Container(
-                            ft.TextField(width=300,height=40, label="Contraseña",password = True, can_reveal_password=True),
-                                padding = ft.padding.only(35,10)
-                            ),
-                        # Contenedor del Botón
-                        ft.Container(
-                            ft.ElevatedButton(
-                                content = ft.Text(
-                                    'INICIAR',
-                                    color = 'white',
-                                    weight ='w500',
-                                    ),
-                                width =280,
-                                bgcolor = 'black',
-                                ),
-                                padding = ft.padding.only(25,10)
-                            ),
-                        ft.Container(
-                            ft.Row([
-                                ft.Text(
-                                    '¿No tiene una cuenta?'
-                                    ),
-                                ft.TextButton(
-                                    'Crear una cuenta'
-                                    ),
-                                ], spacing=8),
-                            padding = ft.padding.only(40)
-                            ),
-                        ],
-                        alignment = ft.MainAxisAlignment.SPACE_EVENLY,
+                    ft.Image(src='logo.png', width=350, ),
+                    padding=ft.padding.only(180, 1)
+                ),
+                ft.Container(
+                    ft.Image(src='logoName.png', width=350, ),
+                    padding=ft.padding.only(180, -10)
+                ),
+                # Texto Bienvenida
+                ft.Container(
+                    ft.Text('Bienvenido', width=360, size=20, weight='w900', text_align='center', color='#3F4450'),
+                    padding=ft.padding.only(170, -20)
+                ),
+                # Contenedor con el nombre de usuario y contraseña
+                ft.Container(
+                    ft.TextField(width=340, height=40, label="Correo Electronico", border_color='#3F4450',
+                                 border_radius=20, color='#3F4450', label_style=ft.TextStyle(color='#3F4450')),
+                    padding=ft.padding.only(200, 15)
+                ),
+                ft.Container(
+                    ft.TextField(width=340, height=40, label="Contraseña", password=True, can_reveal_password=True,
+                                 border_color='#3F4450', border_radius=20, color='#3F4450',
+                                 label_style=ft.TextStyle(color='#3F4450')),
+                    padding=ft.padding.only(200, 15)
+                ),
+                ft.Container(
+                    ft.Row([
+                        ft.Text(
+                            '¿Problemas para iniciar?', color='#3F4450'
                         ),
-                    gradient= ft.LinearGradient(['red', 'orange']),
-                    width=380,
-                    height =460,
-                    border_radius=20
+                        ft.TextButton(
+                            'Recuperar Cuenta', style=ft.ButtonStyle(color='#3EC99D')
+                        ),
+                    ], spacing=4),
+                    padding=ft.padding.only(225)
                 ),
-                ],
-                alignment = ft.MainAxisAlignment.SPACE_EVENLY,
+                # Contenedor del Botón
+                ft.Container(
+                    ft.ElevatedButton(
+                        content=ft.Text(
+                            'Iniciar Sesión',
+                            color='white',
+                            weight='w400',
+                        ),
+                        width=250,
+                        height=35,
+                        bgcolor='#3F4450',
+                    ),
+                    padding=ft.padding.only(240, 10)
                 ),
-        padding= 10,
-        )
+            ],
+                alignment=ft.MainAxisAlignment.SPACE_EVENLY,
+            ),
+            width=700,
+            height=550,
+        ),
+    ],
+        alignment=ft.MainAxisAlignment.SPACE_EVENLY,
+    ),
+)
 
-def main(page:ft.Page):
-    page.window_width =800
-    page.window_height = 520
-    page.padding = 0
+
+def main(page: ft.Page):
+    # Crear un contenedor para el footer
+    footer = ft.Container(
+        height=100,
+        alignment=ft.alignment.center,
+        bgcolor='#3F4450',
+    )
+
+    page.window_width = 1400
+    page.window_height = 780
     page.vertical_alignment = "center"
     page.horizontal_alignment = "center"
-    #page.window_bgcolor = ft.colors.TRANSPARENT
-    #page.window_title_bar_buttons_hidden = True
-    #page.window_frameless = True
-    #page.window_title_bar_hidden = True
-    #page.bgcolor = ft.colors.TRANSPARENT
+    page.bgcolor = ft.colors.WHITE
+    # Agregar el cuerpo y el footer a una columna
     page.add(
-            body
+        ft.Column(
+            [body, footer],
+            expand=True,
+            alignment=ft.MainAxisAlignment.END,
         )
+    )
+
 
 ft.app(target=main)
