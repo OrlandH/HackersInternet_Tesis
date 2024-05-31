@@ -41,8 +41,8 @@ class LoginView:
             ft.Row([
                 ft.Container(
                     ft.Column(controls=[
-                        ft.Container(ft.Image(src='../Resources/logo.png', width=350), padding=ft.padding.only(180, 1)),
-                        ft.Container(ft.Image(src='../Resources/logoName.png', width=350), padding=ft.padding.only(180, -10)),
+                        ft.Container(ft.Image(src='../assets/logo.png', width=350), padding=ft.padding.only(180, 1)),
+                        ft.Container(ft.Image(src='../assets/logoName.png', width=350), padding=ft.padding.only(180, -10)),
                         ft.Container(ft.Text('Bienvenido', width=360, size=20, weight='w900', text_align='center',
                                              color='#3F4450'), padding=ft.padding.only(170, -20)),
                         ft.Container(self.label2, padding=ft.padding.only(170, 10)),
@@ -62,8 +62,8 @@ class LoginView:
             ft.Row([
                 ft.Container(
                     ft.Column(controls=[
-                        ft.Container(ft.Image(src='../Resources/logo.png', width=350), padding=ft.padding.only(180, 1)),
-                        ft.Container(ft.Image(src='../Resources/logoName.png', width=350), padding=ft.padding.only(180, -10)),
+                        ft.Container(ft.Image(src='../assets/logo.png', width=350), padding=ft.padding.only(180, 1)),
+                        ft.Container(ft.Image(src='../assets/logoName.png', width=350), padding=ft.padding.only(180, -10)),
                         ft.Container(ft.Text('Recuperar Clave', width=360, size=20, weight='w900', text_align='center',
                                              color='#3F4450'), padding=ft.padding.only(170, -20)),
                         ft.Container(self.label2, padding=ft.padding.only(170, 10)),
@@ -82,8 +82,8 @@ class LoginView:
             ft.Row([
                 ft.Container(
                     ft.Column(controls=[
-                        ft.Container(ft.Image(src='../Resources/logo.png', width=350), padding=ft.padding.only(180, 1)),
-                        ft.Container(ft.Image(src='../Resources/logoName.png', width=350), padding=ft.padding.only(180, -10)),
+                        ft.Container(ft.Image(src='../assets/logo.png', width=350), padding=ft.padding.only(180, 1)),
+                        ft.Container(ft.Image(src='../assets/logoName.png', width=350), padding=ft.padding.only(180, -10)),
                         ft.Container(ft.Text('Clave Enviada', width=360, size=25, weight='w900', text_align='center',
                                              color='#3F4450'), padding=ft.padding.only(175, -40)),
                         ft.Container(ft.Text('Revisa tu correo Electrónico', color='#3F4450'), padding=ft.padding.only(265, -50)),

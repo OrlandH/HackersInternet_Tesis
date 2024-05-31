@@ -1,5 +1,5 @@
 import flet as ft
-from LoginView import LoginView
+from borradores.LoginView import LoginView
 from presenter import LoginPresenter
 
 def main(page: ft.Page):

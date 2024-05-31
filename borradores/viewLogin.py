@@ -53,11 +53,11 @@ def main(page: ft.Page):
                 ft.Column(controls=[
                     # Contenedor con el logo
                     ft.Container(
-                        ft.Image(src='../Resources/logo.png', width=350, ),
+                        ft.Image(src='../assets/logo.png', width=350, ),
                         padding=ft.padding.only(180, 1)
                     ),
                     ft.Container(
-                        ft.Image(src='../Resources/logoName.png', width=350, ),
+                        ft.Image(src='../assets/logoName.png', width=350, ),
                         padding=ft.padding.only(180, -10)
                     ),
                     # Texto Bienvenida
@@ -116,11 +116,11 @@ def main(page: ft.Page):
                 ft.Column(controls=[
                     # Contenedor con el logo
                     ft.Container(
-                        ft.Image(src='../Resources/logo.png', width=350, ),
+                        ft.Image(src='../assets/logo.png', width=350, ),
                         padding=ft.padding.only(180, 1)
                     ),
                     ft.Container(
-                        ft.Image(src='../Resources/logoName.png', width=350, ),
+                        ft.Image(src='../assets/logoName.png', width=350, ),
                         padding=ft.padding.only(180, -10)
                     ),
                     # Texto Bienvenida
@@ -169,11 +169,11 @@ def main(page: ft.Page):
                 ft.Column(controls=[
                     # Contenedor con el logo
                     ft.Container(
-                        ft.Image(src='../Resources/logo.png', width=350, ),
+                        ft.Image(src='../assets/logo.png', width=350, ),
                         padding=ft.padding.only(180, 1)
                     ),
                     ft.Container(
-                        ft.Image(src='../Resources/logoName.png', width=350, ),
+                        ft.Image(src='../assets/logoName.png', width=350, ),
                         padding=ft.padding.only(180, -10)
                     ),
                     # Texto Bienvenida
