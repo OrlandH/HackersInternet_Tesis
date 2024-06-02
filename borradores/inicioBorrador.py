@@ -1,5 +1,5 @@
 import flet as ft
-
+import datetime
 
 def main(page: ft.page):
     page.update()
@@ -9,10 +9,41 @@ def main(page: ft.page):
         my_index = e.control.selected_index
         homeTab.visible = True if my_index == 0 else False
         clienteTab.visible = True if my_index == 1 else False
-        equiposTab.visible = True if my_index == 2 else False
-        historialTab.visible = True if my_index == 3 else False
-        perfilTab.visible = True if my_index == 4 else False
+        historialTab.visible = True if my_index == 2 else False
+        perfilTab.visible = True if my_index == 3 else False
         page.update()
+
+    def on_hover(e):
+        e.control.bgcolor = "#3EC99D" if e.data == "true" else "#3F4450"
+        e.control.update()
+
+    def show_bs(e):
+        editarVer_Equipo.open = True
+        editarVer_Equipo.update()
+
+    def close_bs(e):
+        editarVer_Equipo.open = False
+        editarVer_Equipo.update()
+
+    def show_agEq(e):
+        agregar_Equipo.open = True
+        agregar_Equipo.update()
+
+    def close_agEq(e):
+        agregar_Equipo.open = False
+        agregar_Equipo.update()
+
+
+
+    def close_dlg(e):
+        dlg_modal.open = False
+        page.update()
+
+    def open_dlg_modal(e):
+        page.dialog = dlg_modal
+        dlg_modal.open = True
+        page.update()
+
 
     page.navigation_bar = ft.NavigationBar(
         bgcolor="#3F4450",
@@ -24,17 +55,48 @@ def main(page: ft.page):
         selected_index=0,
         destinations=[
             ft.NavigationDestination(icon_content=ft.Icon(name=ft.icons.HOME, size=35), selected_icon_content=ft.Icon(name=ft.icons.HOME, color='#3EC99D', size=45)),
-            ft.NavigationDestination(icon_content=ft.Icon(name=ft.icons.PEOPLE_OUTLINE, size=35), selected_icon_content=ft.Icon(name=ft.icons.PEOPLE, color='#3EC99D', size=45)),
-            ft.NavigationDestination(icon_content=ft.Icon(name=ft.icons.COMPUTER, size=35), selected_icon_content=ft.Icon(name=ft.icons.COMPUTER, color='#3EC99D', size=45)),
+            ft.NavigationDestination(icon_content=ft.Icon(name=ft.icons.PEOPLE, size=35), selected_icon_content=ft.Icon(name=ft.icons.PEOPLE, color='#3EC99D', size=45)),
             ft.NavigationDestination(icon_content=ft.Icon(name=ft.icons.NOTE_OUTLINED, size=35), selected_icon_content=ft.Icon(name=ft.icons.NOTE_ROUNDED, color='#3EC99D', size=45)),
-            ft.NavigationDestination(icon_content=ft.Icon(name=ft.icons.PERSON_PIN_OUTLINED, size=35), selected_icon_content=ft.Icon(name=ft.icons.PERSON_PIN_SHARP, color='#3EC99D', size=45)),
+            ft.NavigationDestination(icon_content=ft.Icon(name=ft.icons.PERSON_PIN, size=35), selected_icon_content=ft.Icon(name=ft.icons.PERSON_PIN_SHARP, color='#3EC99D', size=45)),
         ],
     )
 
-    busquedaText = ft.TextField(width=620, height=35, label="Buscar Cliente/Equipo/ID", color='#3F4450',border_color='#3F4450',border_radius=20, label_style=ft.TextStyle(color='#3F4450'), prefix_icon=ft.icons.SEARCH, focused_border_color='#3EC99D')
-    homeTab = ft.Container(
-                ft.Column(controls=[
-                    ft.Row([
+    busquedaText = ft.TextField(width=650, height=35, label="Buscar Cliente/Equipo/ID", color='#3F4450',border_color='#3F4450',border_radius=20,
+                                label_style=ft.TextStyle(color='#3F4450'), prefix_icon=ft.icons.SEARCH, focused_border_color='#3EC99D')
+
+
+    nombreEquipo = "LAPTOP Lenovo Series 15A"
+    estadoEquipo = "En espera"
+    estadoEquipoListo = "LISTO"
+    nombreCliente = "Paul Penafiel"
+    observaciones = "Pantalla rota, necesita un cambio de pantalla en formato asdad"
+    id_equipo = "IMP1234"
+    marcaEquipo = "EPSON"
+    celularCliente = "0987777777"
+
+    nombreEquipoLabel = ft.Text(nombreEquipo, color='#3F4450', size=19, weight='w500')
+    estadoEquipoLabel = ft.Text("En estado: ", color='#3F4450', size=17, weight='w400',
+                                                    spans=[ft.TextSpan(estadoEquipo, ft.TextStyle(color='#FF914D', weight='w500'))])
+    estadoListoEquipoLabel = ft.Text("En estado: ", color='#3F4450', size=17, weight='w400',
+                           spans=[ft.TextSpan(estadoEquipoListo, ft.TextStyle(color='#3EC99D', weight='w500'))])
+    nombreClienteEquipoLabel = ft.Text(nombreCliente, color='#3F4450', size=17, weight='w400')
+    descriEquipoLabel = ft.Text("Observaciones: ", color='#3F4450', size=15, weight='w500',
+                                                    spans=[ft.TextSpan(observaciones, ft.TextStyle(color='#3F4450', weight='w400'))], max_lines=5)
+
+
+    dlg_modal = ft.AlertDialog(
+        modal=True,
+        bgcolor='#3F4450',
+        title=ft.Text("Confirmar"),
+        content=ft.Text("¿Estas seguro de eliminar este equipo?"),
+        actions=[
+            ft.TextButton("Si", on_click=close_dlg),
+            ft.TextButton("No", on_click=close_dlg),
+        ],
+        actions_alignment=ft.MainAxisAlignment.CENTER,
+    )
+
+    header = ft.Row([
                         ft.Container(
                             ft.Row([
                                 ft.Container(ft.Image(src='../assets/logo.png', width=100), padding=ft.padding.only(10,5)),
@@ -43,75 +105,304 @@ def main(page: ft.page):
                         ft.Container(
                             ft.Row([
                                 busquedaText,
-                                ft.Container(ft.IconButton(icon = ft.icons.EXIT_TO_APP,icon_color='#3EC99D',icon_size=45,tooltip="Cerrar Sesión", padding=ft.padding.only(60,0,20))
+                                ft.Container(ft.IconButton(icon = ft.icons.EXIT_TO_APP,icon_color='#3EC99D',icon_size=45,tooltip="Cerrar Sesión",
+                                                           padding=ft.padding.only(60,0,20))
                           )])
                         ),
-                    ], alignment=ft.MainAxisAlignment.SPACE_BETWEEN),
-                    ft.Divider(height=5, thickness=1)
+                    ], alignment=ft.MainAxisAlignment.SPACE_BETWEEN)
+
+
+    editarVer_Equipo = ft.BottomSheet(
+        ft.Container(
+            ft.Column(
+                [
+                    ft.Container(ft.Text("Información de ", size=35, spans=[ft.TextSpan("Equipo", ft.TextStyle(color='#3EC99D'))]), alignment=ft.alignment.center),
+                    ft.Container(ft.Text("ID: ", size=22,spans=[ft.TextSpan(id_equipo, ft.TextStyle(color='#3EC99D'))]),alignment=ft.alignment.center),
+                    ft.Container(ft.TextButton("Ver historial", style=ft.ButtonStyle(color=ft.colors.WHITE)), alignment=ft.alignment.center_right),
+                    ft.Container(ft.TextField(label="Nombre de equipo", value=nombreEquipo), bgcolor=ft.colors.WHITE10),
+                    ft.Container(ft.Row([
+                        ft.Container(ft.TextField(label="Marca", value=marcaEquipo),bgcolor=ft.colors.WHITE10),
+                        ft.Container(ft.TextField(label="Nombre Cliente", value=nombreCliente, width=290), bgcolor=ft.colors.WHITE10),
+                    ])),
+                    ft.Container(ft.Row([
+                        ft.Container(
+                            ft.TextField(label="Celular Contacto", value=celularCliente, width=300, read_only=True),
+                            bgcolor=ft.colors.WHITE10),
+                    ]))
+                ],
+                tight=True, spacing=8
+            ),
+            padding=20, height=700, width=700,
+        ),
+        open=False, is_scroll_controlled=True
+    )
+
+    agregar_Equipo = ft.BottomSheet(
+        ft.Container(
+            ft.Column(
+                [
+                    ft.Container(ft.Text("Registrar Nuevo ", size=35,
+                                         spans=[ft.TextSpan("Equipo", ft.TextStyle(color='#3EC99D'))]),
+                                 alignment=ft.alignment.center),
+                    ft.Container(
+                        ft.Text("ID: ", size=22, spans=[ft.TextSpan(id_equipo, ft.TextStyle(color='#3EC99D'))]),
+                        alignment=ft.alignment.center),
+                    ft.Container(ft.TextField(label="Nombre de equipo"), bgcolor=ft.colors.WHITE10),
+                    ft.Container(ft.Row([
+                        ft.Container(ft.TextField(label="Marca"), bgcolor=ft.colors.WHITE10),
+                        ft.Container(ft.TextField(label="Nombre Cliente", width=290),
+                                     bgcolor=ft.colors.WHITE10),
+                    ])),
+                    ft.Container(ft.Row([
+                        ft.Container(
+                            ft.TextField(label="Celular Contacto", width=300, read_only=True),
+                            bgcolor=ft.colors.WHITE10),
+                    ]))
+                ],
+                tight=True, spacing=8
+            ),
+            padding=20, height=700, width=700
+        ),
+        open=False, is_scroll_controlled=True
+    )
+
+    homeTab = ft.Container(
+                ft.Column(controls=[
+                    header,
+                    ft.Divider(height=5, thickness=1),
+                    # Texto titular
+                    ft.Row([ft.Text(" "),ft.Text(" "), ft.Container(ft.Text('Bienvenido Nuevamente ', width=380, size=22, weight='w250', text_align='center',color='#3F4450',
+                                        spans=[ft.TextSpan("Usuario", ft.TextStyle(color='#3EC99D'))]), alignment=ft.alignment.center,
+                                 padding=ft.padding.only(0,10,0,5)),
+                            ft.ElevatedButton(content=ft.Text('Agregar Equipo',color='white',weight='w200',),bgcolor='#3F4450', on_hover=on_hover, on_click=show_agEq)],
+                           alignment=ft.MainAxisAlignment.SPACE_AROUND),
+
+
+                    # Contenedores de los dos cuadritos principales
+                    ft.Container(
+                        ft.Row([
+                            ft.Container(ft.Column([
+                                ft.Container(ft.Text("Equipos ", width=380, size=20, weight='w250', text_align='center', color='#3F4450',
+                                        spans=[ft.TextSpan("Pendientes", ft.TextStyle(color='#3EC99D'))]), alignment=ft.alignment.center,
+                                             padding=ft.padding.only(0,0,0,20)),
+
+                                # Columna para desplegar las tarjetas de información en equipos pendientes
+                                ft.Container(ft.Column([
+
+                                    # Contenedor de una tarjeta
+                                    ft.Container(
+                                        ft.Container(ft.Column([
+                                            ft.Row([nombreEquipoLabel,ft.IconButton(
+                                                icon=ft.icons.DELETE_FOREVER_ROUNDED,
+                                                icon_color="#3EC99D",
+                                                icon_size=30,
+                                                tooltip="Borrar Equipo",
+                                                on_click=open_dlg_modal,
+                                            ),], alignment=ft.MainAxisAlignment.SPACE_BETWEEN),
+                                            ft.Row([estadoEquipoLabel,
+                                                    ft.Container(ft.Column([
+                                                        ft.ElevatedButton(
+                                                        content=ft.Text('Ver/Editar',color='white',weight='w100',),
+                                                        bgcolor='#3F4450', on_hover=on_hover, on_click=show_bs)
+                                                    ]))
+                                                    ], alignment=ft.MainAxisAlignment.SPACE_BETWEEN),
+                                            nombreClienteEquipoLabel,
+                                            descriEquipoLabel
+                                        ], spacing=0), width=560),
+                                        border=ft.border.all(0.5, color='#8993A7'), width=665, border_radius=3, padding=ft.padding.only(25,7,20,7)
+                                    ),
+                                    # Contenedor de una tarjeta
+                                    ft.Container(
+                                        ft.Container(ft.Column([
+                                            ft.Row([nombreEquipoLabel, ft.IconButton(
+                                                icon=ft.icons.DELETE_FOREVER_ROUNDED,
+                                                icon_color="#3EC99D",
+                                                icon_size=30,
+                                                tooltip="Borrar Equipo",
+                                                on_click=open_dlg_modal,
+                                            ), ], alignment=ft.MainAxisAlignment.SPACE_BETWEEN),
+                                            ft.Row([estadoEquipoLabel,
+                                                    ft.Container(ft.Column([
+                                                        ft.ElevatedButton(
+                                                            content=ft.Text('Ver/Editar', color='white',
+                                                                            weight='w100', ),
+                                                            bgcolor='#3F4450', on_hover=on_hover, on_click=show_bs)
+                                                    ]))
+                                                    ], alignment=ft.MainAxisAlignment.SPACE_BETWEEN),
+                                            nombreClienteEquipoLabel,
+                                            descriEquipoLabel
+                                        ], spacing=0), width=560),
+                                        border=ft.border.all(0.5, color='#8993A7'), width=665, border_radius=3,
+                                        padding=ft.padding.only(25, 7, 20, 7)
+                                    ),
+                                    # Contenedor de una tarjeta
+                                    ft.Container(
+                                        ft.Container(ft.Column([
+                                            ft.Row([nombreEquipoLabel, ft.IconButton(
+                                                icon=ft.icons.DELETE_FOREVER_ROUNDED,
+                                                icon_color="#3EC99D",
+                                                icon_size=30,
+                                                tooltip="Borrar Equipo",
+                                                on_click=open_dlg_modal,
+                                            ), ], alignment=ft.MainAxisAlignment.SPACE_BETWEEN),
+                                            ft.Row([estadoEquipoLabel,
+                                                    ft.Container(ft.Column([
+                                                        ft.ElevatedButton(
+                                                            content=ft.Text('Ver/Editar', color='white',
+                                                                            weight='w100', ),
+                                                            bgcolor='#3F4450', on_hover=on_hover, on_click=show_bs)
+                                                    ]))
+                                                    ], alignment=ft.MainAxisAlignment.SPACE_BETWEEN),
+                                            nombreClienteEquipoLabel,
+                                            descriEquipoLabel
+                                        ], spacing=0), width=560),
+                                        border=ft.border.all(0.5, color='#8993A7'), width=665, border_radius=3,
+                                        padding=ft.padding.only(25, 7, 20, 7)
+                                    ),
+                                    # Contenedor de una tarjeta
+                                    ft.Container(
+                                        ft.Container(ft.Column([
+                                            ft.Row([nombreEquipoLabel, ft.IconButton(
+                                                icon=ft.icons.DELETE_FOREVER_ROUNDED,
+                                                icon_color="#3EC99D",
+                                                icon_size=30,
+                                                tooltip="Borrar Equipo",
+                                                on_click=open_dlg_modal,
+                                            ), ], alignment=ft.MainAxisAlignment.SPACE_BETWEEN),
+                                            ft.Row([estadoEquipoLabel,
+                                                    ft.Container(ft.Column([
+                                                        ft.ElevatedButton(
+                                                            content=ft.Text('Ver/Editar', color='white',
+                                                                            weight='w100', ),
+                                                            bgcolor='#3F4450', on_hover=on_hover, on_click=show_bs)
+                                                    ]))
+                                                    ], alignment=ft.MainAxisAlignment.SPACE_BETWEEN),
+                                            nombreClienteEquipoLabel,
+                                            descriEquipoLabel
+                                        ], spacing=0), width=560),
+                                        border=ft.border.all(0.5, color='#8993A7'), width=665, border_radius=3,
+                                        padding=ft.padding.only(25, 7, 20, 7)
+                                    ),
+
+
+                                # Fin de columna
+                                ], scroll=ft.ScrollMode.ALWAYS, height=415
+                                ))
+                            ]),width=670, height=495, border_radius=30, border=ft.border.all(2, color='#8993A7'), padding=ft.padding.all(10)
+                            ),
+
+
+                            # Segundo contenedor
+                            ft.Container(ft.Column([
+                                ft.Container(ft.Text("Equipos ", width=380, size=20, weight='w250', text_align='center',
+                                                     color='#3F4450',
+                                                     spans=[ft.TextSpan("Por Retirar", ft.TextStyle(color='#3EC99D'))]),
+                                             alignment=ft.alignment.center, padding=ft.padding.only(0, 0, 0, 20)),
+
+
+
+                                # Columna para desplegar las tarjetas de información de equipos listos
+                                ft.Container(ft.Column([
+                                    # Contenedor de una tarjeta
+                                    ft.Container(
+                                        ft.Container(ft.Column([
+                                            ft.Row([nombreEquipoLabel, ft.IconButton(
+                                                icon=ft.icons.DELETE_FOREVER_ROUNDED,
+                                                icon_color="#3EC99D",
+                                                icon_size=30,
+                                                tooltip="Borrar Equipo",
+                                                on_click=open_dlg_modal,
+                                            ), ], alignment=ft.MainAxisAlignment.SPACE_BETWEEN),
+                                            ft.Row([estadoListoEquipoLabel,
+                                                    ft.Container(ft.Column([
+                                                        ft.ElevatedButton(
+                                                            content=ft.Text('Ver/Editar', color='white',
+                                                                            weight='w100', ),
+                                                            bgcolor='#3F4450', on_hover=on_hover, on_click=show_bs)
+                                                    ]))
+                                                    ], alignment=ft.MainAxisAlignment.SPACE_BETWEEN),
+                                            nombreClienteEquipoLabel,
+                                            descriEquipoLabel
+                                        ], spacing=0), width=560),
+                                        border=ft.border.all(0.5, color='#8993A7'), width=665, border_radius=3,
+                                        padding=ft.padding.only(25, 7, 20, 7)
+                                    ),
+                                    # Contenedor de una tarjeta
+                                    ft.Container(
+                                        ft.Container(ft.Column([
+                                            ft.Row([nombreEquipoLabel, ft.IconButton(
+                                                icon=ft.icons.DELETE_FOREVER_ROUNDED,
+                                                icon_color="#3EC99D",
+                                                icon_size=30,
+                                                tooltip="Borrar Equipo",
+                                                on_click=open_dlg_modal,
+                                            ), ], alignment=ft.MainAxisAlignment.SPACE_BETWEEN),
+                                            ft.Row([estadoListoEquipoLabel,
+                                                    ft.Container(ft.Column([
+                                                        ft.ElevatedButton(
+                                                            content=ft.Text('Ver/Editar', color='white',
+                                                                            weight='w100', ),
+                                                            bgcolor='#3F4450', on_hover=on_hover, on_click=show_bs)
+                                                    ]))
+                                                    ], alignment=ft.MainAxisAlignment.SPACE_BETWEEN),
+                                            nombreClienteEquipoLabel,
+                                            descriEquipoLabel
+                                        ], spacing=0), width=560),
+                                        border=ft.border.all(0.5, color='#8993A7'), width=665, border_radius=3,
+                                        padding=ft.padding.only(25, 7, 20, 7)
+                                    ),
+
+                                    # Fin de columna
+                                ], scroll=ft.ScrollMode.ALWAYS, height=415
+                                ))
+                            ]), width=670, height=495, border_radius=30, border=ft.border.all(2, color='#8993A7'),
+                                padding=ft.padding.all(10)
+                            ),
+                        ], alignment=ft.MainAxisAlignment.SPACE_BETWEEN),
+                    )
                 ]), visible= True, width=1400, height=715
     )
 
+
+
     clienteTab = ft.Container(
-        ft.Row([
-            ft.Container(
                 ft.Column(controls=[
+                    header,
+                    ft.Divider(height=5, thickness=1),
                     ft.Container(
-                        ft.Image(src='../assets/logo.png', width=100),
-                        padding=ft.padding.only(1, 1), alignment=ft.alignment.top_left
-                    ),
-                ])
-            )
-        ]
-        ), visible= False, width=1400, height=715
+                        ft.Text('Pestaña ', width=380, size=22, weight='w250', text_align='center',color='#3F4450',
+                                spans=[ft.TextSpan("Clientes", ft.TextStyle(color='#3EC99D'))]),
+                        alignment=ft.alignment.center, padding=ft.padding.only(0, 10))
+                ]), visible= False, width=1400, height=715
     )
 
-    equiposTab = ft.Container(
-        ft.Row([
-            ft.Container(
-                ft.Column(controls=[
-                    ft.Container(
-                        ft.Image(src='../assets/logo.png', width=100),
-                        padding=ft.padding.only(1, 1), alignment=ft.alignment.top_left
-                    ),
-                ])
-            )
-        ]
-        ), visible= False, width=1400, height=715
-    )
 
     historialTab = ft.Container(
-        ft.Row([
-            ft.Container(
                 ft.Column(controls=[
+                    header,
+                    ft.Divider(height=5, thickness=1),
                     ft.Container(
-                        ft.Image(src='../assets/logo.png', width=100),
-                        padding=ft.padding.only(1, 1), alignment=ft.alignment.top_left
-                    ),
-                ])
-            )
-        ]
-        ), visible= False, width=1400, height=715
+                        ft.Text('Pestaña ', width=380, size=22, weight='w250', text_align='center', color='#3F4450',
+                                spans=[ft.TextSpan("Historial", ft.TextStyle(color='#3EC99D'))]),
+                        alignment=ft.alignment.center, padding=ft.padding.only(0, 10))
+                ]), visible= False, width=1400, height=715
     )
 
     perfilTab = ft.Container(
-        ft.Row([
-            ft.Container(
                 ft.Column(controls=[
+                    header,
+                    ft.Divider(height=5, thickness=1),
                     ft.Container(
-                        ft.Image(src='../assets/logo.png', width=100),
-                        padding=ft.padding.only(1, 1), alignment=ft.alignment.top_left
-                    ),
-                ])
-            )
-        ]
-        ), visible= False, width=1400, height=715
+                        ft.Text('Técnico Administrador ', width=380, size=22, weight='w250', text_align='center', color='#3F4450',
+                                spans=[ft.TextSpan("Usuario", ft.TextStyle(color='#3EC99D'))]),
+                        alignment=ft.alignment.center, padding=ft.padding.only(0, 10))
+                ]), visible= False, width=1400, height=715
     )
 
     inicio = ft.Container(
             content=ft.Column([
                 homeTab,
                 clienteTab,
-                equiposTab,
                 historialTab,
                 perfilTab
             ]),
@@ -125,6 +416,9 @@ def main(page: ft.page):
     page.bgcolor = ft.colors.WHITE
     page.title = 'Hackers Internet'
     page.window_resizable= False
+    page.window_maximizable = False
+    page.overlay.append(editarVer_Equipo)
+    page.overlay.append(agregar_Equipo)
     page.add(inicio)
 
 

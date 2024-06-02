@@ -28,6 +28,7 @@ class ViewMain:
         self.page.bgcolor = ft.colors.WHITE
         self.page.title = 'Hackers Internet'
         self.page.window_resizable = False
+        page.window_maximizable = False
         self.page.add(self.ventana)
 
     # Build del Login
