@@ -1,6 +1,6 @@
 import flet as ft
 import datetime
-
+import json
 def main(page: ft.page):
     page.update()
 
@@ -24,6 +24,7 @@ def main(page: ft.page):
     def close_bs(e):
         editarVer_Equipo.open = False
         editarVer_Equipo.update()
+
 
     def show_agEq(e):
         agregar_Equipo.open = True
@@ -54,6 +55,132 @@ def main(page: ft.page):
         date_button.update()
         print(dateString)
 
+    def editarFormulario(e):
+        nombreEquipoEdit.read_only = False
+        nombreEquipoEdit.update()
+        nuevaObservacion.disabled = False
+        nuevaObservacion.update()
+        nuevoEstado.disabled = False
+        nuevoEstado.update()
+        equipoMarcaEdit.read_only = False
+        equipoMarcaEdit.update()
+        nombreClienteEdit.read_only = False
+        nombreClienteEdit.update()
+        date_button.disabled = False
+        date_button.update()
+        cerrarFormularioButton.disabled = True
+        cerrarFormularioButton.update()
+        notificarClienteButton.disabled = True
+        notificarClienteButton.update()
+        actualizarInfoButton.disabled = False
+        actualizarInfoButton.update()
+        cancelarEditButton.disabled = False
+        cancelarEditButton.update()
+        editarButton.disabled = True
+        editarButton.update()
+
+    def cancelarEditFormulario(e):
+        nombreEquipoEdit.read_only = True
+        nombreEquipoEdit.update()
+        nuevaObservacion.disabled = True
+        nuevaObservacion.update()
+        nuevoEstado.disabled = True
+        nuevoEstado.update()
+        equipoMarcaEdit.read_only = True
+        equipoMarcaEdit.update()
+        nombreClienteEdit.read_only = True
+        nombreClienteEdit.update()
+        date_button.disabled = True
+        date_button.update()
+        cerrarFormularioButton.disabled = False
+        cerrarFormularioButton.update()
+        notificarClienteButton.disabled = False
+        notificarClienteButton.update()
+        actualizarInfoButton.disabled = True
+        actualizarInfoButton.update()
+        cancelarEditButton.disabled = True
+        cancelarEditButton.update()
+        editarButton.disabled = False
+        editarButton.update()
+
+    def leerClientesListo():
+        with open('prueba.json', 'r') as file:
+            data = json.load(file)
+
+        equipos_Listos = []
+
+        for i in data:
+            estadoJson = i['estado']
+            estadoListoEquipoLabel = ft.Text("En estado: ", color='#3F4450', size=17, weight='w400',
+                                             spans=[ft.TextSpan(estadoJson,
+                                                                ft.TextStyle(color='#3EC99D', weight='w500'))])
+            nombreClienteEquipoLabel = ft.Text(i['nombre_cliente'], color='#3F4450', size=17, weight='w400')
+            nombreEquipoLabel = ft.Text(i['modelo'], color='#3F4450', size=19, weight='w500')
+            if estadoJson == 'LISTO':
+                equipos_Listos.append(
+                    ft.Container(
+                        ft.Container(ft.Column([
+                            ft.Row([nombreEquipoLabel, ft.IconButton(
+                                icon=ft.icons.DELETE_FOREVER_ROUNDED,
+                                icon_color="#3EC99D",
+                                icon_size=30,
+                                tooltip="Borrar Equipo",
+                                on_click=open_dlg_modal,
+                            ), ], alignment=ft.MainAxisAlignment.SPACE_BETWEEN),
+                            ft.Row([estadoListoEquipoLabel,
+                                    ft.Container(ft.Column([
+                                        ft.ElevatedButton(
+                                            content=ft.Text('Ver/Editar', color='white',
+                                                            weight='w100', ),
+                                            bgcolor='#3F4450', on_hover=on_hover, on_click=show_bs)
+                                    ]))
+                                    ], alignment=ft.MainAxisAlignment.SPACE_BETWEEN),
+                            nombreClienteEquipoLabel,
+                        ], spacing=0), width=560),
+                        border=ft.border.all(0.5, color='#8993A7'), width=665, border_radius=3,
+                        padding=ft.padding.only(25, 7, 20, 7)
+                    )
+                )
+        return equipos_Listos
+
+    def leerClientesPendiente():
+        with open('prueba.json', 'r') as file:
+            data = json.load(file)
+
+        equipos_pendientes = []
+
+        for i in data:
+            estadoJson = i['estado']
+            estadoEquipoLabel = ft.Text("En estado: ", color='#3F4450', size=17, weight='w400',
+                                        spans=[ft.TextSpan(estadoJson, ft.TextStyle(color='#FF914D', weight='w500'))])
+            nombreClienteEquipoLabel = ft.Text(i['nombre_cliente'], color='#3F4450', size=17, weight='w400')
+            nombreEquipoLabel = ft.Text(i['modelo'], color='#3F4450', size=19, weight='w500')
+            if estadoJson != 'LISTO':
+                equipos_pendientes.append(
+                    ft.Container(
+                        ft.Container(ft.Column([
+                            ft.Row([nombreEquipoLabel, ft.IconButton(
+                                icon=ft.icons.DELETE_FOREVER_ROUNDED,
+                                icon_color="#3EC99D",
+                                icon_size=30,
+                                tooltip="Borrar Equipo",
+                                on_click=open_dlg_modal,
+                            ), ], alignment=ft.MainAxisAlignment.SPACE_BETWEEN),
+                            ft.Row([estadoEquipoLabel,
+                                    ft.Container(ft.Column([
+                                        ft.ElevatedButton(
+                                            content=ft.Text('Ver/Editar', color='white',
+                                                            weight='w100', ),
+                                            bgcolor='#3F4450', on_hover=on_hover, on_click=show_bs)
+                                    ]))
+                                    ], alignment=ft.MainAxisAlignment.SPACE_BETWEEN),
+                            nombreClienteEquipoLabel,
+                        ], spacing=0), width=560),
+                        border=ft.border.all(0.5, color='#8993A7'), width=665, border_radius=3,
+                        padding=ft.padding.only(25, 7, 20, 7)
+                    )
+                )
+        return equipos_pendientes
 
 
 
@@ -102,6 +229,14 @@ def main(page: ft.page):
     nuevoEstado = ft.TextField(label="Nuevo Estado", disabled=True)
     equipoMarcaEdit = ft.TextField(label="Marca", value=marcaEquipo, read_only=True)
     nombreClienteEdit = ft.TextField(label="Nombre Cliente", value=nombreCliente, width=290, read_only=True)
+
+    # Botones Formulario Editar
+    editarButton = ft.ElevatedButton(content=ft.Text('Editar Información', color='white', weight='w300'),bgcolor='#3F4450', on_hover=on_hover, on_click=editarFormulario)
+    cerrarFormularioButton = ft.ElevatedButton(content=ft.Text('Cerrar Formulario', color='white', weight='w300'),bgcolor='#3F4450', on_hover=on_hover, on_click=close_bs)
+    notificarClienteButton = ft.ElevatedButton(content=ft.Text('Notificar Cliente', color='white', weight='w300'),bgcolor='#3F4450', on_hover=on_hover, tooltip="Enviar notificacion con estado actual a cliente")
+    # Ya editanto
+    actualizarInfoButton = ft.ElevatedButton(content=ft.Text('Actualizar Datos', color='white', weight='w300'),bgcolor='#3F4450', on_hover=on_hover, tooltip="Actualiza los cambios", disabled=True)
+    cancelarEditButton = ft.ElevatedButton(content=ft.Text('Cancelar Cambios', color='white', weight='w300'),bgcolor='#3F4450', on_hover=on_hover, disabled=True, on_click=cancelarEditFormulario)
 
 
     date_picker = ft.DatePicker(
@@ -191,17 +326,23 @@ def main(page: ft.page):
                     # Text Field para la nueva observacion -----------------------------------------------------
                     ft.Container(nuevaObservacion, bgcolor=ft.colors.WHITE10),
 
-                    # ----------------------------Botones------------------------------------------------------
+                    # ----------------------------Botones Editar------------------------------------------------
                     ft.Container(ft.Row([
-                        ft.ElevatedButton(content=ft.Text('Actualizar Datos', color='white', weight='w300'),bgcolor='#3F4450', on_hover=on_hover, on_click=show_agEq),
-                        ft.ElevatedButton(content=ft.Text('Cerrar Ventana', color='white', weight='w300'),bgcolor='#3F4450', on_hover=on_hover, on_click=close_bs),
-                    ], alignment=ft.MainAxisAlignment.SPACE_AROUND)),
+                        editarButton,
+                        notificarClienteButton,
+                        cerrarFormularioButton,
+                    ], alignment=ft.MainAxisAlignment.SPACE_AROUND), padding=ft.padding.only(0,20)),
+                    # ----------------------------Botones Ya editando------------------------------------------------
+                    ft.Container(ft.Row([
+                        actualizarInfoButton,
+                        cancelarEditButton,
+                    ], alignment=ft.MainAxisAlignment.SPACE_AROUND), padding=ft.padding.only(0,20)),
                 ],
                 tight=True, spacing=8
             ),
             padding=20, height=700, width=700,
         ),
-        open=False, is_scroll_controlled=True
+        open=False, is_scroll_controlled=True, dismissible=False
     )
 
     agregar_Equipo = ft.BottomSheet(
@@ -254,106 +395,7 @@ def main(page: ft.page):
                                              padding=ft.padding.only(0,0,0,20)),
 
                                 # Columna para desplegar las tarjetas de información en equipos pendientes
-                                ft.Container(ft.Column([
-
-                                    # Contenedor de una tarjeta
-                                    ft.Container(
-                                        ft.Container(ft.Column([
-                                            ft.Row([nombreEquipoLabel,ft.IconButton(
-                                                icon=ft.icons.DELETE_FOREVER_ROUNDED,
-                                                icon_color="#3EC99D",
-                                                icon_size=30,
-                                                tooltip="Borrar Equipo",
-                                                on_click=open_dlg_modal,
-                                            ),], alignment=ft.MainAxisAlignment.SPACE_BETWEEN),
-                                            ft.Row([estadoEquipoLabel,
-                                                    ft.Container(ft.Column([
-                                                        ft.ElevatedButton(
-                                                        content=ft.Text('Ver/Editar',color='white',weight='w100',),
-                                                        bgcolor='#3F4450', on_hover=on_hover, on_click=show_bs)
-                                                    ]))
-                                                    ], alignment=ft.MainAxisAlignment.SPACE_BETWEEN),
-                                            nombreClienteEquipoLabel,
-                                            descriEquipoLabel
-                                        ], spacing=0), width=560),
-                                        border=ft.border.all(0.5, color='#8993A7'), width=665, border_radius=3, padding=ft.padding.only(25,7,20,7)
-                                    ),
-                                    # Contenedor de una tarjeta
-                                    ft.Container(
-                                        ft.Container(ft.Column([
-                                            ft.Row([nombreEquipoLabel, ft.IconButton(
-                                                icon=ft.icons.DELETE_FOREVER_ROUNDED,
-                                                icon_color="#3EC99D",
-                                                icon_size=30,
-                                                tooltip="Borrar Equipo",
-                                                on_click=open_dlg_modal,
-                                            ), ], alignment=ft.MainAxisAlignment.SPACE_BETWEEN),
-                                            ft.Row([estadoEquipoLabel,
-                                                    ft.Container(ft.Column([
-                                                        ft.ElevatedButton(
-                                                            content=ft.Text('Ver/Editar', color='white',
-                                                                            weight='w100', ),
-                                                            bgcolor='#3F4450', on_hover=on_hover, on_click=show_bs)
-                                                    ]))
-                                                    ], alignment=ft.MainAxisAlignment.SPACE_BETWEEN),
-                                            nombreClienteEquipoLabel,
-                                            descriEquipoLabel
-                                        ], spacing=0), width=560),
-                                        border=ft.border.all(0.5, color='#8993A7'), width=665, border_radius=3,
-                                        padding=ft.padding.only(25, 7, 20, 7)
-                                    ),
-                                    # Contenedor de una tarjeta
-                                    ft.Container(
-                                        ft.Container(ft.Column([
-                                            ft.Row([nombreEquipoLabel, ft.IconButton(
-                                                icon=ft.icons.DELETE_FOREVER_ROUNDED,
-                                                icon_color="#3EC99D",
-                                                icon_size=30,
-                                                tooltip="Borrar Equipo",
-                                                on_click=open_dlg_modal,
-                                            ), ], alignment=ft.MainAxisAlignment.SPACE_BETWEEN),
-                                            ft.Row([estadoEquipoLabel,
-                                                    ft.Container(ft.Column([
-                                                        ft.ElevatedButton(
-                                                            content=ft.Text('Ver/Editar', color='white',
-                                                                            weight='w100', ),
-                                                            bgcolor='#3F4450', on_hover=on_hover, on_click=show_bs)
-                                                    ]))
-                                                    ], alignment=ft.MainAxisAlignment.SPACE_BETWEEN),
-                                            nombreClienteEquipoLabel,
-                                            descriEquipoLabel
-                                        ], spacing=0), width=560),
-                                        border=ft.border.all(0.5, color='#8993A7'), width=665, border_radius=3,
-                                        padding=ft.padding.only(25, 7, 20, 7)
-                                    ),
-                                    # Contenedor de una tarjeta
-                                    ft.Container(
-                                        ft.Container(ft.Column([
-                                            ft.Row([nombreEquipoLabel, ft.IconButton(
-                                                icon=ft.icons.DELETE_FOREVER_ROUNDED,
-                                                icon_color="#3EC99D",
-                                                icon_size=30,
-                                                tooltip="Borrar Equipo",
-                                                on_click=open_dlg_modal,
-                                            ), ], alignment=ft.MainAxisAlignment.SPACE_BETWEEN),
-                                            ft.Row([estadoEquipoLabel,
-                                                    ft.Container(ft.Column([
-                                                        ft.ElevatedButton(
-                                                            content=ft.Text('Ver/Editar', color='white',
-                                                                            weight='w100', ),
-                                                            bgcolor='#3F4450', on_hover=on_hover, on_click=show_bs)
-                                                    ]))
-                                                    ], alignment=ft.MainAxisAlignment.SPACE_BETWEEN),
-                                            nombreClienteEquipoLabel,
-                                            descriEquipoLabel
-                                        ], spacing=0), width=560),
-                                        border=ft.border.all(0.5, color='#8993A7'), width=665, border_radius=3,
-                                        padding=ft.padding.only(25, 7, 20, 7)
-                                    ),
-
-
-                                # Fin de columna
-                                ], scroll=ft.ScrollMode.ALWAYS, height=415
+                                ft.Container(ft.Column(controls=leerClientesPendiente(), scroll=ft.ScrollMode.ALWAYS, height=415
                                 ))
                             ]),width=670, height=495, border_radius=30, border=ft.border.all(2, color='#8993A7'), padding=ft.padding.all(10)
                             ),
@@ -369,58 +411,7 @@ def main(page: ft.page):
 
 
                                 # Columna para desplegar las tarjetas de información de equipos listos
-                                ft.Container(ft.Column([
-                                    # Contenedor de una tarjeta
-                                    ft.Container(
-                                        ft.Container(ft.Column([
-                                            ft.Row([nombreEquipoLabel, ft.IconButton(
-                                                icon=ft.icons.DELETE_FOREVER_ROUNDED,
-                                                icon_color="#3EC99D",
-                                                icon_size=30,
-                                                tooltip="Borrar Equipo",
-                                                on_click=open_dlg_modal,
-                                            ), ], alignment=ft.MainAxisAlignment.SPACE_BETWEEN),
-                                            ft.Row([estadoListoEquipoLabel,
-                                                    ft.Container(ft.Column([
-                                                        ft.ElevatedButton(
-                                                            content=ft.Text('Ver/Editar', color='white',
-                                                                            weight='w100', ),
-                                                            bgcolor='#3F4450', on_hover=on_hover, on_click=show_bs)
-                                                    ]))
-                                                    ], alignment=ft.MainAxisAlignment.SPACE_BETWEEN),
-                                            nombreClienteEquipoLabel,
-                                            descriEquipoLabel
-                                        ], spacing=0), width=560),
-                                        border=ft.border.all(0.5, color='#8993A7'), width=665, border_radius=3,
-                                        padding=ft.padding.only(25, 7, 20, 7)
-                                    ),
-                                    # Contenedor de una tarjeta
-                                    ft.Container(
-                                        ft.Container(ft.Column([
-                                            ft.Row([nombreEquipoLabel, ft.IconButton(
-                                                icon=ft.icons.DELETE_FOREVER_ROUNDED,
-                                                icon_color="#3EC99D",
-                                                icon_size=30,
-                                                tooltip="Borrar Equipo",
-                                                on_click=open_dlg_modal,
-                                            ), ], alignment=ft.MainAxisAlignment.SPACE_BETWEEN),
-                                            ft.Row([estadoListoEquipoLabel,
-                                                    ft.Container(ft.Column([
-                                                        ft.ElevatedButton(
-                                                            content=ft.Text('Ver/Editar', color='white',
-                                                                            weight='w100', ),
-                                                            bgcolor='#3F4450', on_hover=on_hover, on_click=show_bs)
-                                                    ]))
-                                                    ], alignment=ft.MainAxisAlignment.SPACE_BETWEEN),
-                                            nombreClienteEquipoLabel,
-                                            descriEquipoLabel
-                                        ], spacing=0), width=560),
-                                        border=ft.border.all(0.5, color='#8993A7'), width=665, border_radius=3,
-                                        padding=ft.padding.only(25, 7, 20, 7)
-                                    ),
-
-                                    # Fin de columna
-                                ], scroll=ft.ScrollMode.ALWAYS, height=415
+                                ft.Container(ft.Column(controls=leerClientesListo(), scroll=ft.ScrollMode.ALWAYS, height=415
                                 ))
                             ]), width=670, height=495, border_radius=30, border=ft.border.all(2, color='#8993A7'),
                                 padding=ft.padding.all(10)

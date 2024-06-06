@@ -1,0 +1,26 @@
+[
+  {
+    "id": 5,
+    "marca": "Thosiba",
+    "modelo": "Tecra",
+    "estado": "Cambio pantalla",
+    "id_cliente": 1,
+    "nombre_cliente": "Pablo Falconi"
+  },
+  {
+    "id": 4,
+    "marca": "TEKNO",
+    "modelo": "GAMING",
+    "estado": "Cambio teclado",
+    "id_cliente": 1,
+    "nombre_cliente": "Pablo Falconi"
+},
+   {
+    "id": 3,
+    "marca": "TEKNO",
+    "modelo": "GAMING LAPTOP A15",
+    "estado": "LISTO",
+    "id_cliente": 2,
+    "nombre_cliente": "Pablo Uchuari"
+}
+]
