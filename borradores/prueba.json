@@ -17,7 +17,34 @@
     "nombre_cliente": "Pablo Falconi",
     "observaciones": "ASDASDSA"
 },
+  {
+    "id": 4,
+    "marca": "TEKNO",
+    "modelo": "GAMING",
+    "estado": "Cambio teclado",
+    "id_cliente": 1,
+    "nombre_cliente": "Pablo Falconi",
+    "observaciones": "ASDASDSA"
+},
+  {
+    "id": 4,
+    "marca": "TEKNO",
+    "modelo": "GAMING",
+    "estado": "Cambio teclado",
+    "id_cliente": 1,
+    "nombre_cliente": "Pablo Falconi",
+    "observaciones": "ASDASDSA"
+},
    {
+    "id": 3,
+    "marca": "TEKNO",
+    "modelo": "GAMING LAPTOP A15",
+    "estado": "LISTO",
+    "id_cliente": 2,
+    "nombre_cliente": "Pablo Uchuari",
+     "observaciones": "ASDASDSA"
+},
+     {
     "id": 3,
     "marca": "TEKNO",
     "modelo": "GAMING LAPTOP A15",

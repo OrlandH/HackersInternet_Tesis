@@ -34,3 +34,4 @@ class Presenter:
             self.view.botonRecuperar.disabled = True
 
         self.view.update_view()
+

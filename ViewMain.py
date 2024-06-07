@@ -5,7 +5,7 @@ class ViewMain:
         self.page = page
         self.presenter = presenter
 
-        # Parametros y variables necesarias inicializar Login y Recuperar
+        # Parametros y variables necesarias inicializar Login y Recuperar-----------------------------------------------
         self.label = ft.Text('', width=360, size=10, weight='w900', text_align='center', color=ft.colors.RED)
         self.label2 = ft.Text('', width=360, size=10, weight='w900', text_align='center', color=ft.colors.RED)
         self.correoElectronico = ft.TextField(width=340, height=40, label="Correo Electronico", border_color='#3F4450',border_radius=20, color='#3F4450', label_style=ft.TextStyle(color='#3F4450'),keyboard_type=ft.KeyboardType.EMAIL, on_change=self.presenter.validarCamposLogin,on_focus=self.presenter.validarCamposLogin)
@@ -14,10 +14,41 @@ class ViewMain:
         self.botonRecuperar = ft.ElevatedButton(content=ft.Text('Enviar Clave', color='white', weight='w400'),width=250, height=35, bgcolor='#3F4450', on_click=self.presenter.claveEnviada)
         self.footer = ft.Container(height=100, alignment=ft.alignment.center, bgcolor='#3F4450')
 
+        # Parametros y vistas necesarias para el Inicio -----------------------------------------------------
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
         # Construir Vistas
         self.build_login()
         self.build_restaurar()
         self.build_exito()
+
+
+
+
+
+
+
+
+
 
         # Parametros para la ventana principal
         self.ventana = ft.AnimatedSwitcher(self.login, transition=ft.AnimatedSwitcherTransition.FADE, duration=600,reverse_duration=100, switch_in_curve=ft.AnimationCurve.LINEAR,switch_out_curve=ft.AnimationCurve.LINEAR)
@@ -28,7 +59,7 @@ class ViewMain:
         self.page.bgcolor = ft.colors.WHITE
         self.page.title = 'Hackers Internet'
         self.page.window_resizable = False
-        page.window_maximizable = False
+        self.page.window_maximizable = False
         self.page.add(self.ventana)
 
     # Build del Login
