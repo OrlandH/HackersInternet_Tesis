@@ -1,0 +1,32 @@
+[
+  {
+    "id_cliente": 100,
+    "nombre_cliente": "Pablo Falconi",
+    "celular": "0987547666",
+    "email" : "prueba@gmail.com"
+  },
+  {
+    "id_cliente": 90,
+    "nombre_cliente": "Juan Marco",
+    "celular": "098750000",
+    "email" : "prueba2@gmail.com"
+  },
+  {
+    "id_cliente": 10,
+    "nombre_cliente": "Selena",
+    "celular": "0987524242",
+    "email" : "prueba3@gmail.com"
+  },
+  {
+    "id_cliente": 150,
+    "nombre_cliente": "Franco Hollow",
+    "celular": "0955547666",
+    "email" : "prueba4@gmail.com"
+  },
+  {
+    "id_cliente": 69,
+    "nombre_cliente": "Luffy",
+    "celular": "0985547666",
+    "email" : "prueba5@gmail.com"
+  }
+]

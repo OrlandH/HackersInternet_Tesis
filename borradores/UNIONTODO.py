@@ -18,6 +18,8 @@ def main(page: ft.page):
         passLogin.value = ''
         ventana.update()
     def inicioExitoso(e):
+        correoElectronico.value = ''
+        passLogin.value = ''
         ventana.content = inicio
         ventana.update()
     def validarCamposLogin(e) -> None:
@@ -233,11 +235,13 @@ def main(page: ft.page):
                                   reverse_duration=100, switch_in_curve=ft.AnimationCurve.LINEAR,
                                   switch_out_curve=ft.AnimationCurve.LINEAR,)
 
-    footer = ft.Container(
-        height=100,
-        alignment=ft.alignment.center,
-        bgcolor='#3F4450',
-    )
+
+
+
+# ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+
+
     # Funcion para cambiar los TABS
     def changetab(e):
         # GET INDEX TAB
@@ -287,6 +291,21 @@ def main(page: ft.page):
         page.update()
     def close_dlg(e):
         dlg_modal.open = False
+        page.update()
+
+    # Funcion para abrir y cerrar el cuadro de dialogo de Confirmar para cerrar sesion
+    def open_cerrarSesion_modal(e):
+        page.dialog = sesion_modal
+        sesion_modal.open = True
+        page.update()
+    def close_cerrarSesion_modal(e):
+        sesion_modal.open = False
+        page.update()
+
+    def cerrarSesion(e):
+        ventana.content = login
+        sesion_modal.open = False
+        ventana.update()
         page.update()
 
     # Funcion oara cambiar la fecha, o si cancela
@@ -366,8 +385,8 @@ def main(page: ft.page):
                     ft.Container(
                         ft.Container(ft.Column([
                             ft.Row([nombreEquipoLabel, ft.IconButton(icon=ft.icons.DELETE_FOREVER_ROUNDED,icon_color="#3EC99D",icon_size=30,tooltip="Borrar Equipo",on_click=open_dlg_modal,), ], alignment=ft.MainAxisAlignment.SPACE_BETWEEN),
-                            ft.Row([estadoListoEquipoLabel,ft.Container(ft.Column([ft.ElevatedButton(content=ft.Text('Ver/Editar', color='white',weight='w100', ),bgcolor='#3F4450', on_hover=on_hover, on_click=lambda e, equipo=i: show_bs(e, equipo))]))], alignment=ft.MainAxisAlignment.SPACE_BETWEEN),
-                            nombreClienteEquipoLabel,
+                            ft.Row([ft.Container(estadoListoEquipoLabel, padding=ft.padding.only(0,-20)),ft.Container(ft.Column([ft.ElevatedButton(content=ft.Text('Ver/Editar', color='white',weight='w100', ),bgcolor='#3F4450', on_hover=on_hover, on_click=lambda e, equipo=i: show_bs(e, equipo))]))], alignment=ft.MainAxisAlignment.SPACE_BETWEEN),
+                            ft.Container(nombreClienteEquipoLabel, padding=ft.padding.only(0,-15)),
                             observaciones,
                         ], spacing=0), width=560),
                         border=ft.border.all(0.5, color='#8993A7'), width=665, border_radius=3,padding=ft.padding.only(25, 7, 20, 7)
@@ -390,8 +409,8 @@ def main(page: ft.page):
                 equipos_pendientes.append(
                     ft.Container(
                         ft.Container(ft.Column([ft.Row([nombreEquipoLabel, ft.IconButton(icon=ft.icons.DELETE_FOREVER_ROUNDED,icon_color="#3EC99D",icon_size=30,tooltip="Borrar Equipo",on_click=open_dlg_modal,), ], alignment=ft.MainAxisAlignment.SPACE_BETWEEN),
-                            ft.Row([estadoEquipoLabel,ft.Container(ft.Column([ft.ElevatedButton(content=ft.Text('Ver/Editar', color='white',weight='w100', ),bgcolor='#3F4450', on_hover=on_hover, on_click=lambda e, equipo=i: show_bs(e, equipo))]))], alignment=ft.MainAxisAlignment.SPACE_BETWEEN),
-                            nombreClienteEquipoLabel,
+                            ft.Row([ft.Container(estadoEquipoLabel, padding=ft.padding.only(0,-20)),ft.Container(ft.Column([ft.ElevatedButton(content=ft.Text('Ver/Editar', color='white',weight='w100', ),bgcolor='#3F4450', on_hover=on_hover, on_click=lambda e, equipo=i: show_bs(e, equipo))]))], alignment=ft.MainAxisAlignment.SPACE_BETWEEN),
+                            ft.Container(nombreClienteEquipoLabel, padding=ft.padding.only(0,-15)),
                             observaciones
                         ], spacing=0), width=560),border=ft.border.all(0.5, color='#8993A7'), width=665, border_radius=3,padding=ft.padding.only(25, 7, 20, 7)
                     )
@@ -421,6 +440,16 @@ def main(page: ft.page):
         actions_alignment=ft.MainAxisAlignment.CENTER,
     )
 
+    # Pestaña para confirmar borrado
+    sesion_modal = ft.AlertDialog(
+        modal=True,
+        bgcolor='#3F4450',
+        title=ft.Text("Cerrar Sesión"),
+        content=ft.Text("¿Estas seguro de Cerrar Sesion?"),
+        actions=[ft.TextButton("Si", on_click=cerrarSesion),ft.TextButton("No", on_click=close_cerrarSesion_modal),],
+        actions_alignment=ft.MainAxisAlignment.CENTER,
+    )
+
     # Seleccionador de Fecha
     date_picker = ft.DatePicker(on_change=change_date,on_dismiss=date_picker_dismissed,field_label_text="Ingresa una fecha",first_date=datetime.datetime(2024, 6, 1),
                                 )
@@ -431,7 +460,7 @@ def main(page: ft.page):
     # Header Principal
     header = ft.Row([
         ft.Container(ft.Row([ft.Container(ft.Image(src='../assets/logo.png', width=100), padding=ft.padding.only(10, 5)),ft.Container(ft.Image(src='../assets/logoName.png', width=245), padding=ft.padding.only(15, 15))])),
-        ft.Container(ft.Row([busquedaText,ft.Container(ft.IconButton(icon=ft.icons.EXIT_TO_APP, icon_color='#3EC99D', icon_size=45,tooltip="Cerrar Sesión", padding=ft.padding.only(60, 0, 20)))])
+        ft.Container(ft.Row([busquedaText,ft.Container(ft.IconButton(icon=ft.icons.EXIT_TO_APP, icon_color='#3EC99D', icon_size=45,tooltip="Cerrar Sesión", padding=ft.padding.only(60, 0, 20), on_click=open_cerrarSesion_modal))])
         )], alignment=ft.MainAxisAlignment.SPACE_BETWEEN)
 
 
@@ -534,17 +563,20 @@ def main(page: ft.page):
                     ft.Container(ft.Row([cancelarRegistro,aceptaryPdfButton,], alignment=ft.MainAxisAlignment.SPACE_AROUND), padding=ft.padding.only(0, 20)),
                 ],tight=True, spacing=8
             ),padding=20, height=500, width=700
-        ),open=False, is_scroll_controlled=True
+        ),open=False, is_scroll_controlled=True, dismissible=False
     )
 
+
+
+# -------------------------------------------------------------------------------------------------------------------------------------------------------------------------
     # Pestaña Home Principal
     homeTab = ft.Container(
                 ft.Column(controls=[
                     header,
                     ft.Divider(height=5, thickness=1),
                     # Texto titular
-                    ft.Row([ft.Text(" "),ft.Text(" "), ft.Container(ft.Text('Bienvenido Nuevamente ', width=380, size=22, weight='w250', text_align='center',color='#3F4450',spans=[ft.TextSpan("Usuario", ft.TextStyle(color='#3EC99D'))]), alignment=ft.alignment.center,padding=ft.padding.only(0,10,0,5)),
-                            ft.ElevatedButton(content=ft.Text('Agregar Equipo',color='white',weight='w200',),bgcolor='#3F4450', on_hover=on_hover, on_click=show_agEq)],alignment=ft.MainAxisAlignment.SPACE_AROUND),
+                    ft.Row([ft.Text(" "),ft.Text(" "), ft.Container(ft.Text('Bienvenido Nuevamente ', width=380, size=22, weight='w250', text_align='center',color='#3F4450',spans=[ft.TextSpan("Técnico", ft.TextStyle(color='#3EC99D'))]), alignment=ft.alignment.center,padding=ft.padding.only(0,10,0,5)),
+                            ft.ElevatedButton(content=ft.Text('Agregar Equipo',color='white',weight='w300',),bgcolor='#3F4450', on_hover=on_hover, on_click=show_agEq)],alignment=ft.MainAxisAlignment.SPACE_AROUND),
 
                     # Contenedores de los dos cuadritos principales
                     ft.Container(
@@ -567,18 +599,101 @@ def main(page: ft.page):
                 ]), visible= True, width=1400, height=715
     )
 
+
+
+
+#--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+    # Pestaña de Clientes y sus funciones
+    def leerClientesRegistrados():
+        with open('pruebaclientes.json', 'r') as file:
+            data = json.load(file)
+        clientes_registrados = []
+        for i in data:
+            nombreClienteEquipoLabel = ft.Text(i['nombre_cliente'], color='#3F4450', size=19, weight='w500')
+            celularClienteEquipoLabel = ft.Text(i['celular'], color='#3F4450', size=17, weight='w400')
+            emailClienteEquipoLabel = ft.Text(i['email'], color='#3F4450', size=17, weight='w400')
+            clientes_registrados.append(
+                ft.Container(
+                    ft.Container(ft.Column([ft.Row([nombreClienteEquipoLabel, ft.IconButton(icon=ft.icons.DELETE_FOREVER_ROUNDED,icon_color="#3EC99D",icon_size=30,tooltip="Borrar Equipo",on_click=open_dlg_modal,), ], alignment=ft.MainAxisAlignment.SPACE_BETWEEN),
+                        ft.Row([ft.Container(celularClienteEquipoLabel, padding=ft.padding.only(0,-25)),ft.Container(ft.Column([ft.ElevatedButton(content=ft.Text('Ver/Editar', color='white',weight='w100', ),bgcolor='#3F4450', on_hover=on_hover, on_click=lambda e, equipo=i: show_bs(e, equipo))]))], alignment=ft.MainAxisAlignment.SPACE_BETWEEN),
+                        ft.Container(emailClienteEquipoLabel, padding=ft.padding.only(0,-20))
+                    ], spacing=0), width=560),border=ft.border.all(0.5, color='#8993A7'), width=665, border_radius=3,padding=ft.padding.only(25, 7, 20, 7)
+                )
+            )
+        return clientes_registrados
+
+    def show_agCliente(e):
+        agregar_Cliente.open = True
+        agregar_Cliente.update()
+    def close_agCliente(e):
+        nombreNuevoCliente.value = ""
+        correoNuevoCliente.value = ""
+        celulardelNuevoCliente.value = ""
+        agregar_Cliente.open = False
+        agregar_Cliente.update()
+
+    # Formulario agregar cliente variables ----------------------------------------------------------------------
+    nombreNuevoCliente = ft.TextField(label="Nombre del Cliente")
+    correoNuevoCliente = ft.TextField(label="Correo Electronico del Cliente")
+    celulardelNuevoCliente = ft.TextField(label="Celular del Cliente", width=290)
+
+    # Botones para agregar
+
+    registrarClientesButton = ft.ElevatedButton(content=ft.Text('Registrar Cliente', color='white', weight='w300'),bgcolor='#3F4450', on_hover=on_hover, tooltip="Registra un nuevo cliente")
+    cancelarRegistroCliente = ft.ElevatedButton(content=ft.Text('Cancelar Registro', color='white', weight='w300'),bgcolor='#3F4450', on_hover=on_hover, on_click=close_agCliente)
+
+
+    # Formulario de agregar Cliente
+    agregar_Cliente = ft.BottomSheet(
+        ft.Container(
+            ft.Column(
+                [
+                    # Titulo
+                    ft.Container(ft.Text("Registrar Nuevo ", size=35,
+                                         spans=[ft.TextSpan("Cliente", ft.TextStyle(color='#3EC99D'))]),
+                                 alignment=ft.alignment.center),
+
+                    # Nombre  del Nuevo cliente
+                    ft.Container(nombreNuevoCliente, bgcolor=ft.colors.WHITE10),
+
+                    # Correo electronico y celular del cliente
+                    ft.Container(ft.Row([ft.Container(correoNuevoCliente, bgcolor=ft.colors.WHITE10),
+                                         ft.Container(celulardelNuevoCliente, bgcolor=ft.colors.WHITE10), ])),
+
+                    # ----------------------------Botones Crear------------------------------------------------
+                    ft.Container(
+                        ft.Row([cancelarRegistroCliente, registrarClientesButton], alignment=ft.MainAxisAlignment.SPACE_AROUND),
+                        padding=ft.padding.only(0, 20)),
+                ], tight=True, spacing=8
+            ), padding=20, height=400, width=700
+        ), open=False, is_scroll_controlled=True, dismissible=False
+    )
+
     clienteTab = ft.Container(
                 ft.Column(controls=[
                     header,
                     ft.Divider(height=5, thickness=1),
+                    # Texto titular
+                    ft.Row([ft.Text(" "), ft.Container(ft.Text('Registro de ', width=380, size=22, weight='w250', text_align='center',color='#3F4450',spans=[ft.TextSpan("Clientes", ft.TextStyle(color='#3EC99D'))]), alignment=ft.alignment.center,padding=ft.padding.only(150,10,0,5)),
+                            ft.ElevatedButton(content=ft.Text('Agregar Cliente',color='white',weight='w300',),bgcolor='#3F4450', on_hover=on_hover, on_click=show_agCliente)],alignment=ft.MainAxisAlignment.SPACE_AROUND),
+
+                    # Contenedores de los dos cuadritos principales
                     ft.Container(
-                        ft.Text('Pestaña ', width=380, size=22, weight='w250', text_align='center',color='#3F4450',
-                                spans=[ft.TextSpan("Clientes", ft.TextStyle(color='#3EC99D'))]),
-                        alignment=ft.alignment.center, padding=ft.padding.only(0, 10))
-                ]), visible= False, width=1400, height=715
+                            ft.Container(ft.Column([
+                                ft.Container(ft.Text("Clientes ", width=380, size=20, weight='w250', text_align='center', color='#3F4450',spans=[ft.TextSpan("Registros", ft.TextStyle(color='#3EC99D'))]), alignment=ft.alignment.center,padding=ft.padding.only(0,0,0,20)),
+                                # Columna para desplegar las tarjetas de información en equipos pendientes
+                                ft.Container(ft.Column(controls=leerClientesRegistrados(), scroll=ft.ScrollMode.ALWAYS, height=415))
+                                ]),width=670, height=495, border_radius=30, border=ft.border.all(1.5, color='#8993A7'), padding=ft.padding.all(10)
+                            ), alignment=ft.alignment.center
+                    )
+                ]), visible= True, width=1400, height=715
     )
 
 
+
+
+# --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+    # Historial Tab de equipos
     historialTab = ft.Container(
                 ft.Column(controls=[
                     header,
@@ -616,6 +731,7 @@ def main(page: ft.page):
     page.window_maximizable = False
     page.overlay.append(editarVer_Equipo)
     page.overlay.append(agregar_Equipo)
+    page.overlay.append(agregar_Cliente)
     page.overlay.append(date_picker)
     #page.add(inicio)
     page.add(
