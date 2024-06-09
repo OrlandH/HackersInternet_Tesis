@@ -1,10 +1,9 @@
 import flet as ft
 import datetime
-import json
 import re
+import requests
 def main(page: ft.page):
     page.update()
-
     # Funciones para el inicio de sesión
     def animate(e):
         ventana.content = restaurar if ventana.content == login else login
@@ -264,7 +263,7 @@ def main(page: ft.page):
         estadoEquipoEdit.value = equipo['estado']
         equipoMarcaEdit.value = equipo['marca']
         nombreClienteEdit.value = equipo['nombre_cliente']
-        observacionActualEdit.value = equipo['observaciones']
+        #observacionActualEdit.value = equipo['observaciones']
         editarVer_Equipo.open = True
         editarVer_Equipo.update()
     def close_bs(e):
@@ -275,22 +274,15 @@ def main(page: ft.page):
     def show_agEq(e):
         agregar_Equipo.open = True
         agregar_Equipo.update()
-    def close_agEq(e):
-        nombreNuevoEquipo.value = ""
-        marcaNuevoEquipo.value = ""
-        nombreClienteNuevoEquipo.value = ""
-        estadoNuevoEquipo.value = ""
-        observacionNuevoEquipo.value = ""
-        agregar_Equipo.open = False
-        agregar_Equipo.update()
 
     # Funcion para abrir y cerrar el cuadro de dialogo de Confirmar
-    def open_dlg_modal(e):
-        page.dialog = dlg_modal
-        dlg_modal.open = True
+    def open_dlg_modal(e, equipo):
+        id_Equipo = equipo['id']
+        page.dialog = dlg_modal(id_Equipo)
+        page.dialog.open = True
         page.update()
     def close_dlg(e):
-        dlg_modal.open = False
+        page.dialog.open = False
         page.update()
 
     # Funcion para abrir y cerrar el cuadro de dialogo de Confirmar para cerrar sesion
@@ -300,6 +292,15 @@ def main(page: ft.page):
         page.update()
     def close_cerrarSesion_modal(e):
         sesion_modal.open = False
+        page.update()
+
+    # Funcion para abrir y cerrar el cuadro de dialogo de Confirmar para cerrar sesion
+    def open_ErrorModal(e):
+        page.dialog = ERROR_Modal
+        ERROR_Modal.open = True
+        page.update()
+    def close_ErrorModal(e):
+        ERROR_Modal.open = False
         page.update()
 
     def cerrarSesion(e):
@@ -348,8 +349,10 @@ def main(page: ft.page):
     def cancelarEditFormulario(e):
         nombreEquipoEdit.read_only = True
         nombreEquipoEdit.update()
+        nuevaObservacion.clean()
         nuevaObservacion.disabled = True
         nuevaObservacion.update()
+        nuevoEstado.clean()
         nuevoEstado.disabled = True
         nuevoEstado.update()
         equipoMarcaEdit.read_only = True
@@ -371,23 +374,28 @@ def main(page: ft.page):
 
     # Crear tarjetas de informacion de los clientes listos
     def leerClientesListo():
-        with open('prueba.json', 'r') as file:
-            data = json.load(file)
+        url = "https://tesis-kphi.onrender.com/api/equipos"
+        try:
+            response = requests.get(url)
+            response.raise_for_status()
+            data = response.json()
+        except requests.exceptions.RequestException as e:
+            data = "Error al Obtener datos"
         equipos_Listos = []
         for i in data:
             estadoJson = i['estado']
             estadoListoEquipoLabel = ft.Text("En estado: ", color='#3F4450', size=17, weight='w400',spans=[ft.TextSpan(estadoJson,ft.TextStyle(color='#3EC99D', weight='w500'))])
             nombreClienteEquipoLabel = ft.Text(i['nombre_cliente'], color='#3F4450', size=17, weight='w400')
             nombreEquipoLabel = ft.Text(i['modelo'], color='#3F4450', size=19, weight='w500')
-            observaciones = ft.Text(i['observaciones'], color='#3F4450', size=17, weight='w400')
-            if estadoJson == 'LISTO':
+            #observaciones = ft.Text(i['observaciones'], color='#3F4450', size=17, weight='w400')
+            if estadoJson.lower() == 'listo':
                 equipos_Listos.append(
                     ft.Container(
                         ft.Container(ft.Column([
-                            ft.Row([nombreEquipoLabel, ft.IconButton(icon=ft.icons.DELETE_FOREVER_ROUNDED,icon_color="#3EC99D",icon_size=30,tooltip="Borrar Equipo",on_click=open_dlg_modal,), ], alignment=ft.MainAxisAlignment.SPACE_BETWEEN),
-                            ft.Row([ft.Container(estadoListoEquipoLabel, padding=ft.padding.only(0,-20)),ft.Container(ft.Column([ft.ElevatedButton(content=ft.Text('Ver/Editar', color='white',weight='w100', ),bgcolor='#3F4450', on_hover=on_hover, on_click=lambda e, equipo=i: show_bs(e, equipo))]))], alignment=ft.MainAxisAlignment.SPACE_BETWEEN),
+                            ft.Row([nombreEquipoLabel, ft.IconButton(icon=ft.icons.DELETE_FOREVER_ROUNDED,icon_color="#3EC99D",icon_size=30,tooltip="Borrar Equipo",on_click=lambda e, equipo=i: open_dlg_modal(e, equipo),), ], alignment=ft.MainAxisAlignment.SPACE_BETWEEN),
+                            ft.Row([ft.Container(estadoListoEquipoLabel, padding=ft.padding.only(0,-20)),ft.Container(ft.ElevatedButton(content=ft.Text('Ver/Editar', color='white',weight='w100', ),bgcolor='#3F4450', on_hover=on_hover, on_click=lambda e, equipo=i: show_bs(e, equipo)))], alignment=ft.MainAxisAlignment.SPACE_BETWEEN),
                             ft.Container(nombreClienteEquipoLabel, padding=ft.padding.only(0,-15)),
-                            observaciones,
+                            #observaciones,
                         ], spacing=0), width=560),
                         border=ft.border.all(0.5, color='#8993A7'), width=665, border_radius=3,padding=ft.padding.only(25, 7, 20, 7)
                     )
@@ -396,23 +404,40 @@ def main(page: ft.page):
 
     # Crear tarjetas de información de los clientes pendientes
     def leerClientesPendiente():
-        with open('prueba.json', 'r') as file:
-            data = json.load(file)
+        url = "https://tesis-kphi.onrender.com/api/equipos"
+        try:
+            response = requests.get(url)
+            response.raise_for_status()
+            data = response.json()
+        except requests.exceptions.RequestException as e:
+            data = "Error al Obtener datos"
         equipos_pendientes = []
         for i in data:
             estadoJson = i['estado']
             estadoEquipoLabel = ft.Text("En estado: ", color='#3F4450', size=17, weight='w400',spans=[ft.TextSpan(estadoJson, ft.TextStyle(color='#FF914D', weight='w500'))])
             nombreClienteEquipoLabel = ft.Text(i['nombre_cliente'], color='#3F4450', size=17, weight='w400')
             nombreEquipoLabel = ft.Text(i['modelo'], color='#3F4450', size=19, weight='w500')
-            observaciones = ft.Text(i['observaciones'], color='#3F4450', size=17, weight='w400')
-            if estadoJson != 'LISTO':
+            #observaciones = ft.Text(i['observaciones'], color='#3F4450', size=17, weight='w400')
+            if estadoJson.lower() != 'listo':
                 equipos_pendientes.append(
                     ft.Container(
-                        ft.Container(ft.Column([ft.Row([nombreEquipoLabel, ft.IconButton(icon=ft.icons.DELETE_FOREVER_ROUNDED,icon_color="#3EC99D",icon_size=30,tooltip="Borrar Equipo",on_click=open_dlg_modal,), ], alignment=ft.MainAxisAlignment.SPACE_BETWEEN),
-                            ft.Row([ft.Container(estadoEquipoLabel, padding=ft.padding.only(0,-20)),ft.Container(ft.Column([ft.ElevatedButton(content=ft.Text('Ver/Editar', color='white',weight='w100', ),bgcolor='#3F4450', on_hover=on_hover, on_click=lambda e, equipo=i: show_bs(e, equipo))]))], alignment=ft.MainAxisAlignment.SPACE_BETWEEN),
-                            ft.Container(nombreClienteEquipoLabel, padding=ft.padding.only(0,-15)),
-                            observaciones
-                        ], spacing=0), width=560),border=ft.border.all(0.5, color='#8993A7'), width=665, border_radius=3,padding=ft.padding.only(25, 7, 20, 7)
+                        ft.Container(ft.Column([ft.Row([nombreEquipoLabel,
+                                                        ft.IconButton(icon=ft.icons.DELETE_FOREVER_ROUNDED,
+                                                                      icon_color="#3EC99D", icon_size=30,
+                                                                      tooltip="Borrar Equipo",
+                                                                      on_click=lambda e, equipo=i: open_dlg_modal(e, equipo), ), ],
+                                                       alignment=ft.MainAxisAlignment.SPACE_BETWEEN),
+                                                ft.Row(
+                                                    [ft.Container(estadoEquipoLabel, padding=ft.padding.only(0, -20)),
+                                                     ft.Container(ft.ElevatedButton(
+                                                         content=ft.Text('Ver/Editar', color='white', weight='w100', ),
+                                                         bgcolor='#3F4450', on_hover=on_hover,
+                                                         on_click=lambda e, equipo=i: show_bs(e, equipo)))],
+                                                    alignment=ft.MainAxisAlignment.SPACE_BETWEEN),
+                                                ft.Container(nombreClienteEquipoLabel, padding=ft.padding.only(0, -15)),
+                                                # observaciones
+                                                ], spacing=0), width=560), border=ft.border.all(0.5, color='#8993A7'),
+                        width=665, border_radius=3, padding=ft.padding.only(25, 7, 20, 7)
                     )
                 )
         return equipos_pendientes
@@ -429,16 +454,41 @@ def main(page: ft.page):
 
     # Barra de busqueda general
     busquedaText = ft.TextField(width=650, height=35, label="Buscar Cliente/Equipo/ID", color='#3F4450',border_color='#3F4450',border_radius=20,label_style=ft.TextStyle(color='#3F4450'), prefix_icon=ft.icons.SEARCH, focused_border_color='#3EC99D')
+# ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+    def eliminarEquipo(e, id_Equipo):
+        # Construye la URL con el ID del equipo
+        url = f"https://tesis-kphi.onrender.com/api/equipo/{id_Equipo}"
+
+        try:
+            # Realiza la solicitud DELETE
+            response = requests.delete(url)
+            response.raise_for_status()  # Lanza una excepción si hay un error en la solicitud
+            print(f"Equipo con ID {id_Equipo} eliminado correctamente.")
+            contenedorEquiposListos.controls.clear()
+            contenedorEquiposListos.controls.extend(leerClientesListo())
+            contenedorEquiposListos.update()
+            contenedorEquiposPendientes.controls.clear()
+            contenedorEquiposPendientes.controls.extend(leerClientesPendiente())
+            contenedorEquiposPendientes.update()
+        except requests.exceptions.RequestException as err:
+            print(f"Error al eliminar el equipo con ID {id_Equipo}: {err}")
+
+        # Cierra el diálogo después de eliminar
+        close_dlg(e)
 
     # Pestaña para confirmar borrado
-    dlg_modal = ft.AlertDialog(
-        modal=True,
-        bgcolor='#3F4450',
-        title=ft.Text("Confirmar"),
-        content=ft.Text("¿Estas seguro de eliminar este equipo?"),
-        actions=[ft.TextButton("Si", on_click=close_dlg),ft.TextButton("No", on_click=close_dlg),],
-        actions_alignment=ft.MainAxisAlignment.CENTER,
-    )
+    def dlg_modal(id_Equipo):
+        return ft.AlertDialog(
+            modal=True,
+            bgcolor='#3F4450',
+            title=ft.Text("Confirmar"),
+            content=ft.Text("¿Estás seguro de eliminar este equipo?"),
+            actions=[
+                ft.TextButton("Sí", on_click=lambda e: eliminarEquipo(e, id_Equipo)),
+                ft.TextButton("No", on_click=close_dlg)
+            ],
+            actions_alignment=ft.MainAxisAlignment.CENTER,
+        )
 
     # Pestaña para confirmar borrado
     sesion_modal = ft.AlertDialog(
@@ -450,6 +500,76 @@ def main(page: ft.page):
         actions_alignment=ft.MainAxisAlignment.CENTER,
     )
 
+    # Pestaña para errores
+    ERROR_Modal = ft.AlertDialog(
+        modal=True,
+        bgcolor='#3F4450',
+        title=ft.Text("ERROR"),
+        content=ft.Text("Valide los campos correctamente, y verifique existencias"),
+        actions=[ft.TextButton("Ok", on_click=close_ErrorModal)],
+        actions_alignment=ft.MainAxisAlignment.CENTER,
+    )
+    # Funcion para abrir y cerrar el cuadro de dialogo de Confirmar para cerrar sesion
+    def open_ExitoModal():
+        page.dialog = EXITO_Modal
+        EXITO_Modal.open = True
+        page.update()
+    def close_ExitoModal(e):
+        nombreNuevoEquipo.value = ""
+        marcaNuevoEquipo.value = ""
+        nombreClienteNuevoEquipo.value = ""
+        estadoNuevoEquipo.value = ""
+        observacionNuevoEquipo.value = ""
+        agregar_Equipo.update()
+        contenedorEquiposListos.controls.clear()
+        contenedorEquiposListos.controls.extend(leerClientesListo())
+        contenedorEquiposListos.update()
+        contenedorEquiposPendientes.controls.clear()
+        contenedorEquiposPendientes.controls.extend(leerClientesPendiente())
+        contenedorEquiposPendientes.update()
+        homeTab.update()
+        inicio.update()
+        EXITO_Modal.open = False
+        page.update()
+
+    # Pestaña para proceso exitoso
+    EXITO_Modal = ft.AlertDialog(
+        modal=True,
+        bgcolor='#3F4450',
+        title=ft.Text("Listo!"),
+        content=ft.Text("El proceso se realizo correctamente"),
+        actions=[ft.TextButton("Ok", on_click=close_ExitoModal)],
+        actions_alignment=ft.MainAxisAlignment.CENTER,
+    )
+
+    def open_ExitoModalEdit():
+        page.dialog = EXITO_Edit_Modal
+        EXITO_Edit_Modal.open = True
+        page.update()
+    def close_ExitoModalEdit(e):
+        cancelarEditFormulario(e)
+        contenedorEquiposListos.controls.clear()
+        contenedorEquiposListos.controls.extend(leerClientesListo())
+        contenedorEquiposListos.update()
+        contenedorEquiposPendientes.controls.clear()
+        contenedorEquiposPendientes.controls.extend(leerClientesPendiente())
+        contenedorEquiposPendientes.update()
+        homeTab.update()
+        inicio.update()
+        EXITO_Edit_Modal.open = False
+        close_bs(e)
+        page.update()
+
+    # Pestaña para proceso exitoso
+    EXITO_Edit_Modal = ft.AlertDialog(
+        modal=True,
+        bgcolor='#3F4450',
+        title=ft.Text("Listo!"),
+        content=ft.Text("El proceso se realizo correctamente"),
+        actions=[ft.TextButton("Ok", on_click=close_ExitoModalEdit)],
+        actions_alignment=ft.MainAxisAlignment.CENTER,
+    )
+# ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
     # Seleccionador de Fecha
     date_picker = ft.DatePicker(on_change=change_date,on_dismiss=date_picker_dismissed,field_label_text="Ingresa una fecha",first_date=datetime.datetime(2024, 6, 1),
                                 )
@@ -477,10 +597,48 @@ def main(page: ft.page):
     cerrarFormularioButton = ft.ElevatedButton(content=ft.Text('Cerrar Formulario', color='white', weight='w300'),bgcolor='#3F4450', on_hover=on_hover, on_click=close_bs)
     notificarClienteButton = ft.ElevatedButton(content=ft.Text('Notificar Cliente', color='white', weight='w300'),bgcolor='#3F4450', on_hover=on_hover, tooltip="Enviar notificacion con estado actual a cliente")
 
+
+    def validarClienteEditar(e):
+        url = "https://tesis-kphi.onrender.com/api/clientes"
+        try:
+            response = requests.get(url)
+            response.raise_for_status()
+            data = response.json()
+        except requests.exceptions.RequestException as e:
+            print("Error al Obtener datos")
+
+        for cliente in data:
+            if cliente['nombre'] == nombreClienteEdit.value:
+                cliente_id = cliente['id']
+                print(f"Si existe, ID del cliente: {cliente_id}")
+                ActualizarEquipo(cliente_id)
+                break
+            else:
+                open_ErrorModal(e)
+
+    def ActualizarEquipo(id):
+        url = f"https://tesis-kphi.onrender.com/api/equipo/{id_EquipoEdit.value}"
+        headers = {'Content-Type': 'application/json'}
+        data = {
+            "marca": equipoMarcaEdit.value,
+            "modelo": nombreEquipoEdit.value,
+            "estado": nuevoEstado.value,
+            "id_cliente": id
+        }
+
+        try:
+            response = requests.put(url, json=data, headers=headers)
+            response.raise_for_status()  # Verificar si la solicitud tuvo éxito
+            print("Equipo editado exitosamente")
+            open_ExitoModalEdit()
+        except requests.exceptions.RequestException as e:
+            print(e)
+            open_ErrorModal(e)
+
     # Ya editanto
     nuevoEstado = ft.TextField(label="Nuevo Estado", disabled=True)
     nuevaObservacion = ft.TextField(label="Actualizar información", multiline=True, max_lines=3, disabled=True)
-    actualizarInfoButton = ft.ElevatedButton(content=ft.Text('Actualizar Datos', color='white', weight='w300'),bgcolor='#3F4450', on_hover=on_hover, tooltip="Actualiza los cambios", disabled=True)
+    actualizarInfoButton = ft.ElevatedButton(content=ft.Text('Actualizar Datos', color='white', weight='w300'),bgcolor='#3F4450', on_hover=on_hover, tooltip="Actualiza los cambios", disabled=True, on_click=validarClienteEditar)
     cancelarEditButton = ft.ElevatedButton(content=ft.Text('Cancelar Cambios', color='white', weight='w300'),bgcolor='#3F4450', on_hover=on_hover, disabled=True, on_click=cancelarEditFormulario)
 
 
@@ -527,6 +685,50 @@ def main(page: ft.page):
         ),open=False, is_scroll_controlled=True, dismissible=False
     )
 
+    def close_agEq(e):
+        nombreNuevoEquipo.value = ""
+        marcaNuevoEquipo.value = ""
+        nombreClienteNuevoEquipo.value = ""
+        estadoNuevoEquipo.value = ""
+        observacionNuevoEquipo.value = ""
+        agregar_Equipo.open = False
+        agregar_Equipo.update()
+
+    def validarCliente(e):
+        url = "https://tesis-kphi.onrender.com/api/clientes"
+        try:
+            response = requests.get(url)
+            response.raise_for_status()
+            data = response.json()
+        except requests.exceptions.RequestException as e:
+            print("Error al Obtener datos")
+
+        for cliente in data:
+            if cliente['nombre'] == nombreClienteNuevoEquipo.value:
+                cliente_id = cliente['id']
+                print(f"Si existe, ID del cliente: {cliente_id}")
+                registrarEquipo_PDF(cliente_id)
+                break
+            else:
+                open_ErrorModal(e)
+    def registrarEquipo_PDF(id):
+        url = "https://tesis-kphi.onrender.com/api/equipo"
+        headers = {'Content-Type': 'application/json'}
+        data = {
+            "marca": marcaNuevoEquipo.value,
+            "modelo": nombreNuevoEquipo.value,
+            "estado": estadoNuevoEquipo.value,
+            "id_cliente": id
+        }
+
+        try:
+            response = requests.post(url, json=data, headers=headers)
+            response.raise_for_status()  # Verificar si la solicitud tuvo éxito
+            print("Equipo creado exitosamente")
+            open_ExitoModal()
+        except requests.exceptions.RequestException as e:
+            open_ErrorModal(e)
+
 
     # Formulario agregar computadora variables ----------------------------------------------------------------------
     nombreNuevoEquipo = ft.TextField(label="Nombre de equipo")
@@ -536,7 +738,7 @@ def main(page: ft.page):
     observacionNuevoEquipo = ft.TextField(label="Observaciones")
     # Botones para agregar
 
-    aceptaryPdfButton = ft.ElevatedButton(content=ft.Text('Registrar y Crear PDF', color='white', weight='w300'),bgcolor='#3F4450', on_hover=on_hover, tooltip="Registra y Crea un PDF")
+    aceptaryPdfButton = ft.ElevatedButton(content=ft.Text('Registrar y Crear PDF', color='white', weight='w300'),bgcolor='#3F4450', on_hover=on_hover, tooltip="Registra y Crea un PDF", on_click=validarCliente)
     cancelarRegistro = ft.ElevatedButton(content=ft.Text('Cancelar Registro', color='white', weight='w300'),bgcolor='#3F4450', on_hover=on_hover, on_click=close_agEq)
 
     # Formulario de agregar computadora
@@ -567,7 +769,8 @@ def main(page: ft.page):
     )
 
 
-
+    contenedorEquiposPendientes = ft.Column(controls=leerClientesPendiente(), scroll=ft.ScrollMode.ALWAYS, height=415)
+    contenedorEquiposListos = ft.Column(controls=leerClientesListo(), scroll=ft.ScrollMode.ALWAYS, height=415)
 # -------------------------------------------------------------------------------------------------------------------------------------------------------------------------
     # Pestaña Home Principal
     homeTab = ft.Container(
@@ -584,7 +787,7 @@ def main(page: ft.page):
                             ft.Container(ft.Column([
                                 ft.Container(ft.Text("Equipos ", width=380, size=20, weight='w250', text_align='center', color='#3F4450',spans=[ft.TextSpan("Pendientes", ft.TextStyle(color='#3EC99D'))]), alignment=ft.alignment.center,padding=ft.padding.only(0,0,0,20)),
                                 # Columna para desplegar las tarjetas de información en equipos pendientes
-                                ft.Container(ft.Column(controls=leerClientesPendiente(), scroll=ft.ScrollMode.ALWAYS, height=415))
+                                contenedorEquiposPendientes
                             ]),width=670, height=495, border_radius=30, border=ft.border.all(1.5, color='#8993A7'), padding=ft.padding.all(10)
                             ),
                             # Segundo contenedor
@@ -592,7 +795,7 @@ def main(page: ft.page):
                                 ft.Container(ft.Text("Equipos ", width=380, size=20, weight='w250', text_align='center',color='#3F4450',spans=[ft.TextSpan("Por Retirar", ft.TextStyle(color='#3EC99D'))]),alignment=ft.alignment.center, padding=ft.padding.only(0, 0, 0, 20)),
 
                                 # Columna para desplegar las tarjetas de información de equipos listos
-                                ft.Container(ft.Column(controls=leerClientesListo(), scroll=ft.ScrollMode.ALWAYS, height=415))
+                                contenedorEquiposListos
                             ]), width=670, height=495, border_radius=30, border=ft.border.all(1.5, color='#8993A7'),padding=ft.padding.all(10)
                             ),
                         ], alignment=ft.MainAxisAlignment.SPACE_BETWEEN),)
@@ -605,17 +808,24 @@ def main(page: ft.page):
 #--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
     # Pestaña de Clientes y sus funciones
     def leerClientesRegistrados():
-        with open('pruebaclientes.json', 'r') as file:
-            data = json.load(file)
+        url = "https://tesis-kphi.onrender.com/api/clientes"
+        try:
+            response = requests.get(url)
+            response.raise_for_status()
+            data = response.json()
+        except requests.exceptions.RequestException as e:
+            data = "Error al Obtener datos"
+        #with open('pruebaclientes.json', 'r') as file:
+            #data = json.load(file)
         clientes_registrados = []
         for i in data:
-            nombreClienteEquipoLabel = ft.Text(i['nombre_cliente'], color='#3F4450', size=19, weight='w500')
-            celularClienteEquipoLabel = ft.Text(i['celular'], color='#3F4450', size=17, weight='w400')
-            emailClienteEquipoLabel = ft.Text(i['email'], color='#3F4450', size=17, weight='w400')
+            nombreClienteEquipoLabel = ft.Text(i['nombre'], color='#3F4450', size=19, weight='w500')
+            celularClienteEquipoLabel = ft.Text(i['telefono'], color='#3F4450', size=17, weight='w400')
+            emailClienteEquipoLabel = ft.Text(i['correo'], color='#3F4450', size=17, weight='w400')
             clientes_registrados.append(
                 ft.Container(
                     ft.Container(ft.Column([ft.Row([nombreClienteEquipoLabel, ft.IconButton(icon=ft.icons.DELETE_FOREVER_ROUNDED,icon_color="#3EC99D",icon_size=30,tooltip="Borrar Equipo",on_click=open_dlg_modal,), ], alignment=ft.MainAxisAlignment.SPACE_BETWEEN),
-                        ft.Row([ft.Container(celularClienteEquipoLabel, padding=ft.padding.only(0,-25)),ft.Container(ft.Column([ft.ElevatedButton(content=ft.Text('Ver/Editar', color='white',weight='w100', ),bgcolor='#3F4450', on_hover=on_hover, on_click=lambda e, equipo=i: show_bs(e, equipo))]))], alignment=ft.MainAxisAlignment.SPACE_BETWEEN),
+                        ft.Row([ft.Container(celularClienteEquipoLabel, padding=ft.padding.only(0,-25)),ft.Container(ft.ElevatedButton(content=ft.Text('Ver/Editar', color='white',weight='w100', ),bgcolor='#3F4450', on_hover=on_hover, on_click=lambda e, equipo=i: show_bs(e, equipo)))], alignment=ft.MainAxisAlignment.SPACE_BETWEEN),
                         ft.Container(emailClienteEquipoLabel, padding=ft.padding.only(0,-20))
                     ], spacing=0), width=560),border=ft.border.all(0.5, color='#8993A7'), width=665, border_radius=3,padding=ft.padding.only(25, 7, 20, 7)
                 )
@@ -733,7 +943,6 @@ def main(page: ft.page):
     page.overlay.append(agregar_Equipo)
     page.overlay.append(agregar_Cliente)
     page.overlay.append(date_picker)
-    #page.add(inicio)
     page.add(
         ventana
     )
