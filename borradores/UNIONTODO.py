@@ -15,12 +15,71 @@ def main(page: ft.page):
         ventana.content = exito
         correoElectronico.value = ''
         passLogin.value = ''
+        label2.value= ''
         ventana.update()
-    def inicioExitoso(e):
+
+    def login_admin(e):
+        url = "https://tesis-kphi.onrender.com/api/admin/login"
+        headers = {'Content-Type': 'application/json'}
+        data = {
+            "correo": correoElectronico.value,
+            "password": passLogin.value
+        }
+
+        try:
+            response = requests.post(url, json=data, headers=headers)
+
+            # Verificar si la solicitud tuvo éxito
+            if response.status_code == 200:
+                response_data = response.json()
+                # Realizar la acción con la información de la respuesta
+                nombre_Admin = response_data.get("nombre")
+                correo_Admin = response_data.get("correo")
+                telefono_Admin = response_data.get("telefono")
+                id_Admin = response_data.get("id")
+                nombreAdminText.value = response_data.get("nombre")
+                inicioExitoso()
+            else:
+                print(f"Error en el login: {response.status_code}")
+                label.value = "Credenciales Incorrectas"
+                passLogin.value = ''
+                page.update()
+        except requests.exceptions.RequestException as e:
+            print(f"Error al realizar la solicitud: {e}")
+            label.value="Error con el servidor"
+            passLogin.value = ''
+            page.update()
+    def recuperar_admin(e):
+        url = "https://tesis-kphi.onrender.com/api/admin/recuperar-password"
+        headers = {'Content-Type': 'application/json'}
+        data = {
+            "correo": correoElectronico.value,
+        }
+        try:
+            response = requests.post(url, json=data, headers=headers)
+
+            # Verificar si la solicitud tuvo éxito
+            if response.status_code == 200:
+                response_data = response.json()
+                print(response_data.get("msg"))
+                claveEnviada(e=None)
+            else:
+                print(f"Error en el login: {response.status_code}")
+                label2.value = "Correo Incorrecto"
+                correoElectronico.value = ''
+                page.update()
+        except requests.exceptions.RequestException as e:
+            print(f"Error al realizar la solicitud: {e}")
+            label2.value="Error con el servidor"
+            correoElectronico.value = ''
+            page.update()
+    def inicioExitoso():
+        label.value=''
         correoElectronico.value = ''
         passLogin.value = ''
         ventana.content = inicio
         ventana.update()
+
     def validarCamposLogin(e) -> None:
         pattern = r'^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$'
         aux = re.match(pattern,correoElectronico.value) is not None
@@ -56,9 +115,9 @@ def main(page: ft.page):
                              on_focus=validarCamposLogin)
 
     botonLogin = ft.ElevatedButton(content=ft.Text('Iniciar Sesión', color='white', weight='w400', ), width=250,
-                                   height=35, bgcolor='#3F4450', on_click=inicioExitoso)
+                                   height=35, bgcolor='#3F4450', on_click=login_admin)
     botonRecuperar = ft.ElevatedButton(content=ft.Text('Enviar Clave', color='white', weight='w400', ), width=250,
-                                       height=35, bgcolor='#3F4450', on_click=claveEnviada)
+                                       height=35, bgcolor='#3F4450', on_click=recuperar_admin)
 
 
 
@@ -193,7 +252,7 @@ def main(page: ft.page):
                     ),
                     # Texto Bienvenida
                     ft.Container(
-                        ft.Text('Clave Enviada', width=360, size=25, weight='w900', text_align='center',
+                        ft.Text('Clave Temporal Enviada', width=360, size=25, weight='w900', text_align='center',
                                 color='#3F4450'),
                         padding=ft.padding.only(175, -40)
                     ),
@@ -311,11 +370,12 @@ def main(page: ft.page):
 
     # Funcion oara cambiar la fecha, o si cancela
     def change_date(e):
-        dateString = (date_picker.value.strftime("%d/%m/%Y"))
+        dateString = (date_picker.value.strftime("%Y-%m-%d"))
         date_button.text = dateString
+        print(dateString)
         date_button.update()
     def date_picker_dismissed(e):
-        dateString = (date_picker.value.strftime("%d/%m/%Y"))
+        dateString = (date_picker.value.strftime("%Y-%m-%d"))
         date_button.text=dateString
         date_button.update()
         print(dateString)
@@ -387,7 +447,7 @@ def main(page: ft.page):
             estadoListoEquipoLabel = ft.Text("En estado: ", color='#3F4450', size=17, weight='w400',spans=[ft.TextSpan(estadoJson,ft.TextStyle(color='#3EC99D', weight='w500'))])
             nombreClienteEquipoLabel = ft.Text(i['nombre_cliente'], color='#3F4450', size=17, weight='w400')
             nombreEquipoLabel = ft.Text(i['modelo'], color='#3F4450', size=19, weight='w500')
-            #observaciones = ft.Text(i['observaciones'], color='#3F4450', size=17, weight='w400')
+            observaciones = ft.Text("Observaciones:", color='#3EC99D', size=17, weight='w400',spans=[ft.TextSpan(i['observaciones'], ft.TextStyle(color='#3F4450', weight='w400'))])
             if estadoJson.lower() == 'listo':
                 equipos_Listos.append(
                     ft.Container(
@@ -395,7 +455,7 @@ def main(page: ft.page):
                             ft.Row([nombreEquipoLabel, ft.IconButton(icon=ft.icons.DELETE_FOREVER_ROUNDED,icon_color="#3EC99D",icon_size=30,tooltip="Borrar Equipo",on_click=lambda e, equipo=i: open_dlg_modal(e, equipo),), ], alignment=ft.MainAxisAlignment.SPACE_BETWEEN),
                             ft.Row([ft.Container(estadoListoEquipoLabel, padding=ft.padding.only(0,-20)),ft.Container(ft.ElevatedButton(content=ft.Text('Ver/Editar', color='white',weight='w100', ),bgcolor='#3F4450', on_hover=on_hover, on_click=lambda e, equipo=i: show_bs(e, equipo)))], alignment=ft.MainAxisAlignment.SPACE_BETWEEN),
                             ft.Container(nombreClienteEquipoLabel, padding=ft.padding.only(0,-15)),
-                            #observaciones,
+                            observaciones,
                         ], spacing=0), width=560),
                         border=ft.border.all(0.5, color='#8993A7'), width=665, border_radius=3,padding=ft.padding.only(25, 7, 20, 7)
                     )
@@ -417,7 +477,7 @@ def main(page: ft.page):
             estadoEquipoLabel = ft.Text("En estado: ", color='#3F4450', size=17, weight='w400',spans=[ft.TextSpan(estadoJson, ft.TextStyle(color='#FF914D', weight='w500'))])
             nombreClienteEquipoLabel = ft.Text(i['nombre_cliente'], color='#3F4450', size=17, weight='w400')
             nombreEquipoLabel = ft.Text(i['modelo'], color='#3F4450', size=19, weight='w500')
-            #observaciones = ft.Text(i['observaciones'], color='#3F4450', size=17, weight='w400')
+            observaciones = ft.Text("Observaciones:", color='#3EC99D', size=17, weight='w400',spans=[ft.TextSpan(i['observaciones'], ft.TextStyle(color='#3F4450', weight='w400'))])
             if estadoJson.lower() != 'listo':
                 equipos_pendientes.append(
                     ft.Container(
@@ -435,7 +495,7 @@ def main(page: ft.page):
                                                          on_click=lambda e, equipo=i: show_bs(e, equipo)))],
                                                     alignment=ft.MainAxisAlignment.SPACE_BETWEEN),
                                                 ft.Container(nombreClienteEquipoLabel, padding=ft.padding.only(0, -15)),
-                                                # observaciones
+                                                observaciones
                                                 ], spacing=0), width=560), border=ft.border.all(0.5, color='#8993A7'),
                         width=665, border_radius=3, padding=ft.padding.only(25, 7, 20, 7)
                     )
@@ -623,7 +683,8 @@ def main(page: ft.page):
             "marca": equipoMarcaEdit.value,
             "modelo": nombreEquipoEdit.value,
             "estado": nuevoEstado.value,
-            "id_cliente": id
+            "id_cliente": id,
+            "observaciones": nuevaObservacion.value
         }
 
         try:
@@ -718,7 +779,8 @@ def main(page: ft.page):
             "marca": marcaNuevoEquipo.value,
             "modelo": nombreNuevoEquipo.value,
             "estado": estadoNuevoEquipo.value,
-            "id_cliente": id
+            "id_cliente": id,
+            "observaciones": observacionNuevoEquipo.value,
         }
 
         try:
@@ -915,15 +977,28 @@ def main(page: ft.page):
                 ]), visible= False, width=1400, height=715
     )
 
+# --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+    nombreAdminText = ft.TextField(width=630, height=35, label="Nombre del Cliente", color='#3F4450',
+                                border_color='#3F4450', border_radius=20, label_style=ft.TextStyle(color='#3F4450'),
+                                 focused_border_color='#3EC99D', read_only=True)
+    # Perfil del Técnico
     perfilTab = ft.Container(
                 ft.Column(controls=[
                     header,
                     ft.Divider(height=5, thickness=1),
+                    # Contenedores de los dos cuadritos principales
                     ft.Container(
-                        ft.Text('Técnico Administrador ', width=380, size=22, weight='w250', text_align='center', color='#3F4450',
-                                spans=[ft.TextSpan("Usuario", ft.TextStyle(color='#3EC99D'))]),
-                        alignment=ft.alignment.center, padding=ft.padding.only(0, 10))
-                ]), visible= False, width=1400, height=715
+                            ft.Container(ft.Column([
+                                ft.Container(ft.Text("Información del ", width=380, size=20, weight='w250', text_align='center', color='#3F4450',spans=[ft.TextSpan("Técnico", ft.TextStyle(color='#3EC99D'))]), alignment=ft.alignment.center,padding=ft.padding.only(0,0,0,20)),
+                                # Columna para desplegar las tarjetas de información en equipos pendientes
+                                ft.Container(ft.Column([
+                                    nombreAdminText
+                                ], scroll=ft.ScrollMode.ALWAYS,
+                                                       height=415))
+                                ]),width=670, height=550, border_radius=30, border=ft.border.all(1.5, color='#8993A7'), padding=ft.padding.all(10)
+                            ), alignment=ft.alignment.center
+                    )
+                ]), visible= True, width=1400, height=715
     )
 
     inicio = ft.Container(
