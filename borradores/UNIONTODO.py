@@ -841,7 +841,7 @@ def main(page: ft.page):
                     ft.Divider(height=5, thickness=1),
                     # Texto titular
                     ft.Row([ft.Text(" "),ft.Text(" "), ft.Container(ft.Text('Bienvenido Nuevamente ', width=380, size=22, weight='w250', text_align='center',color='#3F4450',spans=[ft.TextSpan("Técnico", ft.TextStyle(color='#3EC99D'))]), alignment=ft.alignment.center,padding=ft.padding.only(0,10,0,5)),
-                            ft.ElevatedButton(content=ft.Text('Agregar Equipo',color='white',weight='w300',),bgcolor='#3F4450', on_hover=on_hover, on_click=show_agEq)],alignment=ft.MainAxisAlignment.SPACE_AROUND),
+                            ft.ElevatedButton(content=ft.Text('Agregar Equipo',color='white',weight='w300',),bgcolor='#3F4450', on_hover=on_hover, on_click=show_agEq )],alignment=ft.MainAxisAlignment.SPACE_AROUND),
 
                     # Contenedores de los dos cuadritos principales
                     ft.Container(
