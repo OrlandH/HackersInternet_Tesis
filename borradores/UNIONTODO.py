@@ -489,7 +489,7 @@ def main(page: ft.page):
                                                         ft.IconButton(icon=ft.icons.DELETE_FOREVER_ROUNDED,
                                                                       icon_color="#3EC99D", icon_size=30,
                                                                       tooltip="Borrar Equipo",
-                                                                      on_click=lambda e, equipo=i: open_dlg_modal(e, equipo), ), ],
+                                                                      on_click=lambda e, equipo=i: open_dlg_modal(e, equipo)), ],
                                                        alignment=ft.MainAxisAlignment.SPACE_BETWEEN),
                                                 ft.Row(
                                                     [ft.Container(estadoEquipoLabel, padding=ft.padding.only(0, -20)),
@@ -890,7 +890,7 @@ def main(page: ft.page):
             emailClienteEquipoLabel = ft.Text(i['correo'], color='#3F4450', size=17, weight='w400')
             clientes_registrados.append(
                 ft.Container(
-                    ft.Container(ft.Column([ft.Row([nombreClienteEquipoLabel, ft.IconButton(icon=ft.icons.DELETE_FOREVER_ROUNDED,icon_color="#3EC99D",icon_size=30,tooltip="Borrar Equipo",on_click=open_dlg_modal,), ], alignment=ft.MainAxisAlignment.SPACE_BETWEEN),
+                    ft.Container(ft.Column([ft.Row([nombreClienteEquipoLabel, ft.IconButton(icon=ft.icons.DELETE_FOREVER_ROUNDED,icon_color="#3EC99D",icon_size=30,tooltip="Borrar Equipo",on_click=lambda e, cliente=i: openmodal_ClienteDel(e, cliente)), ], alignment=ft.MainAxisAlignment.SPACE_BETWEEN),
                         ft.Row([ft.Container(celularClienteEquipoLabel, padding=ft.padding.only(0,-25)),ft.Container(ft.ElevatedButton(content=ft.Text('Ver/Editar', color='white',weight='w100', ),bgcolor='#3F4450', on_hover=on_hover, on_click=lambda e, equipo=i: show_bs(e, equipo)))], alignment=ft.MainAxisAlignment.SPACE_BETWEEN),
                         ft.Container(emailClienteEquipoLabel, padding=ft.padding.only(0,-20))
                     ], spacing=0), width=560),border=ft.border.all(0.5, color='#8993A7'), width=665, border_radius=3,padding=ft.padding.only(25, 7, 20, 7)
@@ -907,6 +907,48 @@ def main(page: ft.page):
         celulardelNuevoCliente.value = ""
         agregar_Cliente.open = False
         agregar_Cliente.update()
+
+
+    # Funcion para abrir y cerrar el cuadro de dialogo de Confirmar
+    def openmodal_ClienteDel(e, cliente):
+        id_Cliente = cliente['id']
+        page.dialog = modalDelCliente(id_Cliente)
+        page.dialog.open = True
+        page.update()
+    def closemodal_ClienteDel(e):
+        page.dialog.open = False
+        page.update()
+
+    def modalDelCliente(id_Cliente):
+        return ft.AlertDialog(
+            modal=True,
+            bgcolor='#3F4450',
+            title=ft.Text("Confirmar"),
+            content=ft.Text("¿Estás seguro de eliminar este Cliente?"),
+            actions=[
+                ft.TextButton("Sí", on_click=lambda e: eliminarCliente(e, id_Cliente)),
+                ft.TextButton("No", on_click=closemodal_ClienteDel),
+            ],
+            actions_alignment=ft.MainAxisAlignment.CENTER,
+        )
+
+    def eliminarCliente(e, id_Cliente):
+        # Construye la URL con el ID del Cliente
+        url = f"https://tesis-kphi.onrender.com/api/cliente/{id_Cliente}"
+
+        try:
+            # Realiza la solicitud DELETE
+            response = requests.delete(url)
+            response.raise_for_status()  # Lanza una excepción si hay un error en la solicitud
+            print(f"Cliente con ID {id_Cliente} eliminado correctamente.")
+            contenedorListarClientes.controls.clear()
+            contenedorListarClientes.controls.extend(leerClientesRegistrados())
+            contenedorListarClientes.update()
+        except requests.exceptions.RequestException as err:
+            print(f"Error al eliminar el equipo con ID {id_Cliente}: {err}")
+
+        # Cierra el diálogo después de eliminar
+        close_dlg(e)
 
     # Formulario agregar cliente variables ----------------------------------------------------------------------
     nombreNuevoCliente = ft.TextField(label="Nombre del Cliente")
@@ -944,7 +986,7 @@ def main(page: ft.page):
             ), padding=20, height=400, width=700
         ), open=False, is_scroll_controlled=True, dismissible=False
     )
-
+    contenedorListarClientes = ft.Column(controls=leerClientesRegistrados(), scroll=ft.ScrollMode.ALWAYS, height=415)
     clienteTab = ft.Container(
                 ft.Column(controls=[
                     header,
@@ -958,7 +1000,7 @@ def main(page: ft.page):
                             ft.Container(ft.Column([
                                 ft.Container(ft.Text("Clientes ", width=380, size=20, weight='w250', text_align='center', color='#3F4450',spans=[ft.TextSpan("Registros", ft.TextStyle(color='#3EC99D'))]), alignment=ft.alignment.center,padding=ft.padding.only(0,0,0,20)),
                                 # Columna para desplegar las tarjetas de información en equipos pendientes
-                                ft.Container(ft.Column(controls=leerClientesRegistrados(), scroll=ft.ScrollMode.ALWAYS, height=415))
+                                ft.Container(contenedorListarClientes)
                                 ]),width=670, height=495, border_radius=30, border=ft.border.all(1.5, color='#8993A7'), padding=ft.padding.all(10)
                             ), alignment=ft.alignment.center
                     )
