@@ -1261,7 +1261,7 @@ def main(page: ft.page):
                                         botonActuPass, botonCancelarPass
                                     ], alignment=ft.MainAxisAlignment.SPACE_BETWEEN)),
                                 ], scroll=ft.ScrollMode.ALWAYS,height=520, spacing=10))
-                                ]),width=670, height=550, border_radius=30, border=ft.border.all(1.5, color='#8993A7'), padding=ft.padding.all(20)
+                                ]),width=670, height=550, border_radius=30, border=ft.border.all(1.5, color='#8993A7'), padding=ft.padding.only(20,40,20,20)
                             ), alignment=ft.alignment.center
                     )
                 ]), visible= True, width=1400, height=715
