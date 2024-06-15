@@ -2,6 +2,10 @@ import flet as ft
 import datetime
 import re
 import requests
+
+valorNombreAdmin = ""
+valorCelAdmin = ""
+valCorreoAdmin = ""
 def main(page: ft.page):
     page.update()
     # Funciones para el inicio de sesión
@@ -28,16 +32,16 @@ def main(page: ft.page):
 
         try:
             response = requests.post(url, json=data, headers=headers)
-
             # Verificar si la solicitud tuvo éxito
             if response.status_code == 200:
                 response_data = response.json()
                 # Realizar la acción con la información de la respuesta
-                nombre_Admin = response_data.get("nombre")
-                correo_Admin = response_data.get("correo")
-                telefono_Admin = response_data.get("telefono")
-                id_Admin = response_data.get("id")
                 nombreAdminText.value = response_data.get("nombre")
+                celularAdminText.value = response_data.get("telefono")
+                correoAdminText.value = response_data.get("correo")
+                page.client_storage.set("nombre", response_data.get("nombre"))
+                page.client_storage.set("correo", response_data.get("correo"))
+                page.client_storage.set("telefono", response_data.get("telefono"))
                 inicioExitoso()
             else:
                 print(f"Error en el login: {response.status_code}")
@@ -322,7 +326,7 @@ def main(page: ft.page):
         estadoEquipoEdit.value = equipo['estado']
         equipoMarcaEdit.value = equipo['marca']
         nombreClienteEdit.value = equipo['nombre_cliente']
-        #observacionActualEdit.value = equipo['observaciones']
+        observacionActualEdit.value = equipo['observaciones']
         editarVer_Equipo.open = True
         editarVer_Equipo.update()
     def close_bs(e):
@@ -978,9 +982,248 @@ def main(page: ft.page):
     )
 
 # --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-    nombreAdminText = ft.TextField(width=630, height=35, label="Nombre del Cliente", color='#3F4450',
+
+    def editarInformacionAdmin(e):
+        nombreAdminText.read_only = False
+        nombreAdminText.update()
+        celularAdminText.read_only = False
+        celularAdminText.update()
+        correoAdminText.disabled = False
+        correoAdminText.update()
+        passwordAdminText.disabled = False
+        passwordAdminText.update()
+        botonEditar.disabled = True
+        botonEditar.update()
+        botonCancelarEditar.disabled = False
+        botonCancelarEditar.update()
+
+    def cancelarEditarInformacionAdmin(e):
+        nombreAdminText.value =page.client_storage.get('nombre')
+        nombreAdminText.read_only = True
+        nombreAdminText.update()
+        celularAdminText.value = page.client_storage.get('telefono')
+        celularAdminText.read_only = True
+        celularAdminText.update()
+        correoAdminText.value = page.client_storage.get('correo')
+        correoAdminText.disabled = True
+        correoAdminText.update()
+        passwordAdminText.value = ""
+        passwordAdminText.disabled = True
+        passwordAdminText.update()
+        botonEditar.disabled = False
+        botonEditar.update()
+        labelPasAdmin.value = ''
+        labelPasAdmin.update()
+        labelAdmin.value = ''
+        labelAdmin.update()
+        botonCancelarEditar.disabled = True
+        botonCancelarEditar.update()
+        botonActualizar.disabled = True
+        botonActualizar.update()
+
+    def validarCamposEditAdmin(e) -> None:
+        pattern = r'^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$'
+        aux = re.match(pattern,correoAdminText.value) is not None
+        if aux:
+            labelAdmin.value=''
+            if passwordAdminText.value == '':
+                labelPasAdmin.value = 'Ingresa tu contraseña para los cambios'
+                botonActualizar.disabled = True
+            else:
+                labelPasAdmin.value = ''
+                botonActualizar.disabled = False
+        else:
+            labelAdmin.value='Ingresa un correo Válido'
+            botonActualizar.disabled = True
+
+        page.update()
+
+    def validarCamposNuevaPass(e) -> None:
+        if passNuevaConf.value == '' or passNuevaText.value == '' or passActualText.value == '':
+            labelNuevaPass.value = 'Llena todos los campos'
+            botonActuPass.disabled = True
+        else:
+            if passNuevaText.value == passNuevaConf.value:
+                botonActuPass.disabled = False
+                labelNuevaPass.value = ''
+            else:
+                labelNuevaPass.value = 'Los valores deben ser iguales'
+                botonActuPass.disabled = True
+        page.update()
+
+    def validarAdminEditar(e):
+        url = "https://tesis-kphi.onrender.com/api/admin/login"
+        headers = {'Content-Type': 'application/json'}
+        data = {
+            "correo": page.client_storage.get('correo'),
+            "password": passwordAdminText.value
+        }
+
+        try:
+            response = requests.post(url, json=data, headers=headers)
+            # Verificar si la solicitud tuvo éxito
+            if response.status_code == 200:
+                response_data = response.json()
+                ActualizarAdmin(e, response_data.get('id'))
+            else:
+                labelPasAdmin.value = "Credenciales Incorrectas"
+                passwordAdminText.value = ''
+                page.update()
+        except requests.exceptions.RequestException as e:
+            print(f"Error al realizar la solicitud: {e}")
+            labelPasAdmin.value = "Error con el servidor"
+            passwordAdminText.value = ''
+            page.update()
+
+
+
+    def ActualizarAdmin(e, id):
+        url = f"https://tesis-kphi.onrender.com/api/admin/{id}"
+        headers = {'Content-Type': 'application/json'}
+        data = {
+            "correo": correoAdminText.value,
+            "nombre": nombreAdminText.value,
+            "telefono": celularAdminText.value,
+            "password": passwordAdminText.value,
+        }
+
+        try:
+            response = requests.put(url, json=data, headers=headers)
+            response.raise_for_status()  # Verificar si la solicitud tuvo éxito
+            print("Datos editados exitosamente")
+            page.client_storage.set("nombre", nombreAdminText.value)
+            page.client_storage.set("telefono", celularAdminText.value)
+            page.client_storage.set("correo", correoAdminText.value)
+            page.update()
+            cancelarEditarInformacionAdmin(e)
+        except requests.exceptions.RequestException as e:
+            print(e)
+            labelPasAdmin.value ='Error al Actualizar'
+
+    def ActualizarPass(e):
+        passActualText.disabled = False
+        passActualText.update()
+        passNuevaConf.disabled = False
+        passNuevaConf.update()
+        passNuevaText.disabled = False
+        passNuevaText.update()
+        botonEditPass.disabled = True
+        botonEditPass.update()
+        botonActuPass.disabled = False
+        botonActuPass.update()
+        botonCancelarPass.disabled = False
+        botonCancelarPass.update()
+    def CancelarActualizarPass(e):
+        passActualText.value = ''
+        passNuevaText.value = ''
+        passNuevaConf.value = ''
+        passActualText.disabled = True
+        passActualText.update()
+        passNuevaConf.disabled = True
+        passNuevaConf.update()
+        passNuevaText.disabled = True
+        passNuevaText.update()
+        botonEditPass.disabled = False
+        botonEditPass.update()
+        botonActuPass.disabled = True
+        botonActuPass.update()
+        botonCancelarPass.disabled = True
+        botonCancelarPass.update()
+        labelNuevaPass.value = ''
+        labelNuevaPass.update()
+
+    def validarAdminPassEditar(e):
+        url = "https://tesis-kphi.onrender.com/api/admin/login"
+        headers = {'Content-Type': 'application/json'}
+        data = {
+            "correo": page.client_storage.get('correo'),
+            "password": passActualText.value
+        }
+
+        try:
+            response = requests.post(url, json=data, headers=headers)
+            # Verificar si la solicitud tuvo éxito
+            if response.status_code == 200:
+                response_data = response.json()
+                ActualizarPassAdmin(e, response_data.get('id'))
+            else:
+                labelNuevaPass.value = "Credenciales Incorrectas"
+                passActualText.value = ''
+                page.update()
+        except requests.exceptions.RequestException as e:
+            print(f"Error al realizar la solicitud: {e}")
+            labelNuevaPass.value = "Error con el servidor"
+            passActualText.value = ''
+            page.update()
+    def ActualizarPassAdmin(e, id):
+        url = f"https://tesis-kphi.onrender.com/api/admin/{id}"
+        headers = {'Content-Type': 'application/json'}
+        data = {
+            "correo": page.client_storage.get('correo'),
+            "nombre": page.client_storage.get('nombre'),
+            "telefono": page.client_storage.get('telefono'),
+            "password": passNuevaText.value,
+        }
+
+        try:
+            response = requests.put(url, json=data, headers=headers)
+            response.raise_for_status()  # Verificar si la solicitud tuvo éxito
+            print("Contraseña editada exitosamente")
+            passActualText.value = ''
+            passActualText.update()
+            passNuevaText.value = ''
+            passNuevaText.update()
+            passNuevaConf.value = ''
+            passNuevaConf.update()
+            CancelarActualizarPass(e)
+        except requests.exceptions.RequestException as e:
+            print(e)
+            labelNuevaPass.value ='Error al Actualizar'
+
+
+    nombreAdminText = ft.TextField(width=630, height=40, label="Nombre del Cliente", color='#3F4450',
                                 border_color='#3F4450', border_radius=20, label_style=ft.TextStyle(color='#3F4450'),
                                  focused_border_color='#3EC99D', read_only=True)
+    celularAdminText = ft.TextField(width=310, height=40, label="Celular del Contacto", color='#3F4450',
+                                   border_color='#3F4450', border_radius=20, label_style=ft.TextStyle(color='#3F4450'),
+                                   focused_border_color='#3EC99D', read_only=True)
+    correoAdminText = ft.TextField(width=310, height=40, label="Correo Electrónico", color='#3F4450',
+                                   border_color='#3F4450', border_radius=20, label_style=ft.TextStyle(color='#3F4450'),
+                                   focused_border_color='#3EC99D', disabled=True, on_change=validarCamposEditAdmin, on_focus=validarCamposEditAdmin)
+
+    passwordAdminText = ft.TextField(width=310, height=40, label="Contraseña Confirmar", color='#3F4450',
+                                   border_color='#3F4450', border_radius=20, label_style=ft.TextStyle(color='#3F4450'),
+                                   focused_border_color='#3EC99D', disabled=True, password=True, can_reveal_password=True, on_change=validarCamposEditAdmin, on_focus=validarCamposEditAdmin)
+
+    botonEditar = ft.ElevatedButton(content=ft.Text('Editar Informacion', color='white', weight='w300'),bgcolor='#3F4450', width=275,on_hover=on_hover, on_click=editarInformacionAdmin)
+    botonActualizar = ft.ElevatedButton(content=ft.Text('Confirmar y Actualizar', color='white', weight='w300'),
+                                    bgcolor='#3F4450', on_hover=on_hover, disabled=True, width=310, on_click=validarAdminEditar)
+    botonCancelarEditar = ft.ElevatedButton(content=ft.Text('Cancelar Cambios', color='white', weight='w300'),
+                                    bgcolor='#3F4450', on_hover=on_hover, disabled=True, on_click=cancelarEditarInformacionAdmin, width=275)
+
+    #-----------------------------------ACTUALIZAR CONTRASEÑA---------------------------------------------
+    passActualText = ft.TextField(width=310, height=40, label="Contraseña Actual", color='#3F4450',
+                                    border_color='#3F4450', border_radius=20, label_style=ft.TextStyle(color='#3F4450'),
+                                    focused_border_color='#3EC99D', disabled=True, password=True, on_change=validarCamposNuevaPass)
+    passNuevaText = ft.TextField(width=310, height=40, label="Nueva Contraseña", color='#3F4450',
+                                  border_color='#3F4450', border_radius=20, label_style=ft.TextStyle(color='#3F4450'),
+                                  focused_border_color='#3EC99D', disabled=True, password=True, can_reveal_password=True, on_change=validarCamposNuevaPass)
+    passNuevaConf = ft.TextField(width=310, height=40, label="Confirmar Contraseña", color='#3F4450',
+                                  border_color='#3F4450', border_radius=20, label_style=ft.TextStyle(color='#3F4450'),
+                                  focused_border_color='#3EC99D', disabled=True, password=True, on_change=validarCamposNuevaPass)
+
+    botonEditPass = ft.ElevatedButton(content=ft.Text('Nueva Contraseña', color='white', weight='w300'),
+                                            bgcolor='#3F4450', on_hover=on_hover,width=310, on_click=ActualizarPass)
+    botonActuPass = ft.ElevatedButton(content=ft.Text('Actualizar Contraseña', color='white', weight='w300'),
+                                      bgcolor='#3F4450', on_hover=on_hover, disabled=True,
+                                      width=275, on_click=validarAdminPassEditar)
+    botonCancelarPass = ft.ElevatedButton(content=ft.Text('Cancelar', color='white', weight='w300'),
+                                      bgcolor='#3F4450', on_hover=on_hover, disabled=True,
+                                      width=275, on_click=CancelarActualizarPass)
+
+    labelAdmin = ft.Text('', width=360, size=12, weight='w900', text_align='center', color=ft.colors.RED)
+    labelPasAdmin = ft.Text('', width=360, size=12, weight='w900', text_align='center', color=ft.colors.RED)
+    labelNuevaPass = ft.Text('', width=360, size=12, weight='w900', text_align='center', color=ft.colors.RED)
     # Perfil del Técnico
     perfilTab = ft.Container(
                 ft.Column(controls=[
@@ -992,10 +1235,33 @@ def main(page: ft.page):
                                 ft.Container(ft.Text("Información del ", width=380, size=20, weight='w250', text_align='center', color='#3F4450',spans=[ft.TextSpan("Técnico", ft.TextStyle(color='#3EC99D'))]), alignment=ft.alignment.center,padding=ft.padding.only(0,0,0,20)),
                                 # Columna para desplegar las tarjetas de información en equipos pendientes
                                 ft.Container(ft.Column([
-                                    nombreAdminText
-                                ], scroll=ft.ScrollMode.ALWAYS,
-                                                       height=415))
-                                ]),width=670, height=550, border_radius=30, border=ft.border.all(1.5, color='#8993A7'), padding=ft.padding.all(10)
+                                    nombreAdminText,
+                                    ft.Container(ft.Row([
+                                        celularAdminText, correoAdminText
+                                    ])),
+                                    ft.Container(ft.Row([
+                                        ft.Text(""), labelAdmin,
+                                    ], alignment=ft.MainAxisAlignment.SPACE_BETWEEN), padding=ft.padding.only(0,-15,0,-10)),
+                                    ft.Container(ft.Row([
+                                        passwordAdminText, botonActualizar
+                                    ], alignment=ft.MainAxisAlignment.SPACE_BETWEEN)),
+                                    ft.Container(labelPasAdmin, padding=ft.padding.only(0,-13,0,-10)),
+                                    ft.Container(ft.Row([
+                                        botonEditar, botonCancelarEditar
+                                    ], alignment=ft.MainAxisAlignment.SPACE_AROUND)),
+                                    ft.Container(ft.Divider(height=5, thickness=1, color='#8993A7')),
+                                    ft.Container(ft.Row([
+                                        passActualText, passNuevaText
+                                    ], alignment=ft.MainAxisAlignment.SPACE_BETWEEN)),
+                                    ft.Container(ft.Row([
+                                        botonEditPass, passNuevaConf
+                                    ], alignment=ft.MainAxisAlignment.SPACE_BETWEEN)),
+                                    ft.Container(labelNuevaPass, padding=ft.padding.only(0,-15,0,-10)),
+                                    ft.Container(ft.Row([
+                                        botonActuPass, botonCancelarPass
+                                    ], alignment=ft.MainAxisAlignment.SPACE_BETWEEN)),
+                                ], scroll=ft.ScrollMode.ALWAYS,height=520, spacing=10))
+                                ]),width=670, height=550, border_radius=30, border=ft.border.all(1.5, color='#8993A7'), padding=ft.padding.all(20)
                             ), alignment=ft.alignment.center
                     )
                 ]), visible= True, width=1400, height=715
