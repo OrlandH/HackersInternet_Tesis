@@ -2,6 +2,7 @@ import flet as ft
 import datetime
 import re
 import requests
+import webbrowser
 
 valorNombreAdmin = ""
 valorCelAdmin = ""
@@ -327,6 +328,31 @@ def main(page: ft.page):
         equipoMarcaEdit.value = equipo['marca']
         nombreClienteEdit.value = equipo['nombre_cliente']
         observacionActualEdit.value = equipo['observaciones']
+
+        url = "https://tesis-kphi.onrender.com/api/clientes"
+        try:
+            response = requests.get(url)
+            response.raise_for_status()
+            data = response.json()
+        except requests.exceptions.RequestException as e:
+            print("Error al Obtener datos")
+        for cliente in data:
+            if cliente['nombre'] == equipo['nombre_cliente']:
+                cliente_id = cliente['id']
+                url2 = f"https://tesis-kphi.onrender.com/api/cliente/{cliente_id}"
+                try:
+                    response = requests.get(url2)
+                    response.raise_for_status()
+                    data2 = response.json()
+                    celularClienteEdit.value = data2['telefono']
+                    print(data2['telefono'])
+                except requests.exceptions.RequestException as e:
+                    print("Error al Obtener Celular del Cliente")
+                break
+            else:
+                celularClienteEdit.value = ""
+
+
         editarVer_Equipo.open = True
         editarVer_Equipo.update()
     def close_bs(e):
@@ -654,6 +680,7 @@ def main(page: ft.page):
     equipoMarcaEdit = ft.TextField(label="Marca", value="", read_only=True)
     estadoEquipoEdit = ft.TextField(value="", read_only=True, border="none", text_size=18)
     nombreClienteEdit = ft.TextField(label="Nombre Cliente", value="", width=290, read_only=True)
+    celularClienteEdit = ft.TextField(label="Celular Cliente", value="", width=165, read_only=True)
     observacionActualEdit = ft.TextField(value="", read_only=True, border="none", text_size=16, max_lines=3)
 
     # Botones Formulario Editar
@@ -663,6 +690,12 @@ def main(page: ft.page):
 
 
     def validarClienteEditar(e):
+        if nuevoEstado.value == '':
+            nuevoEstado.value = estadoEquipoEdit.value
+            nuevoEstado.update()
+        if nuevaObservacion.value == '':
+            nuevaObservacion.value = observacionActualEdit.value
+            nuevaObservacion.update()
         url = "https://tesis-kphi.onrender.com/api/clientes"
         try:
             response = requests.get(url)
@@ -721,7 +754,7 @@ def main(page: ft.page):
                     ft.Container(ft.Row([ft.Container(ft.Text("ID:", size=25, color='#3EC99D')),ft.Container(id_EquipoEdit)], alignment=ft.MainAxisAlignment.CENTER), padding=ft.padding.only(260,-25), margin=0),
 
                     # Boton Ver Historial --------------------------------------------
-                    ft.Container(ft.TextButton("Ver historial", style=ft.ButtonStyle(color=ft.colors.WHITE)), alignment=ft.alignment.center_right, margin=0, padding=ft.padding.only(0,-15)),
+                    ft.Container(ft.TextButton("Ver historial", style=ft.ButtonStyle(color=ft.colors.WHITE)), alignment=ft.alignment.center_right, margin=0, padding=ft.padding.only(0,-20)),
 
                     # TextField nombre del equipo ------------------------------------
                     ft.Container(nombreEquipoEdit, bgcolor=ft.colors.WHITE10),
@@ -730,7 +763,7 @@ def main(page: ft.page):
                     ft.Container(ft.Row([ft.Container(equipoMarcaEdit,bgcolor=ft.colors.WHITE10),ft.Container(nombreClienteEdit, bgcolor=ft.colors.WHITE10),])),
 
                     # Label que muestra el estado actual -----------------
-                    ft.Container(ft.Row([ft.Container(ft.Text("Estado Actual:", size=18, color='#3EC99D'),padding=ft.padding.only(20,13,40,13)),ft.Container(estadoEquipoEdit)], alignment=ft.MainAxisAlignment.START)),
+                    ft.Container(ft.Row([ft.Container(ft.Text("Estado Actual:", size=18, color='#3EC99D'),padding=ft.padding.only(20,13,40,13)),ft.Container(estadoEquipoEdit, width=240), ft.Container(celularClienteEdit, padding=ft.padding.only(0), bgcolor=ft.colors.WHITE10)], alignment=ft.MainAxisAlignment.START)),
 
                     # Texto que muestra la ultima observacion --------------------------------------------------
                     ft.Container(ft.Row([ft.Container(ft.Text("Observaciones:", size=16, color='#3EC99D'),padding=ft.padding.only(20, 13, 40, 13)),ft.Container(observacionActualEdit, width=400)], alignment=ft.MainAxisAlignment.START)),
@@ -756,6 +789,7 @@ def main(page: ft.page):
         nombreClienteNuevoEquipo.value = ""
         estadoNuevoEquipo.value = ""
         observacionNuevoEquipo.value = ""
+        tipoNuevoEquipo.value = ""
         agregar_Equipo.open = False
         agregar_Equipo.update()
 
@@ -777,6 +811,8 @@ def main(page: ft.page):
             else:
                 open_ErrorModal(e)
     def registrarEquipo_PDF(id):
+        if estadoNuevoEquipo.value == "":
+            estadoNuevoEquipo.value = 'Ingresado'
         url = "https://tesis-kphi.onrender.com/api/equipo"
         headers = {'Content-Type': 'application/json'}
         data = {
@@ -785,6 +821,7 @@ def main(page: ft.page):
             "estado": estadoNuevoEquipo.value,
             "id_cliente": id,
             "observaciones": observacionNuevoEquipo.value,
+            "tipo": tipoNuevoEquipo.value,
         }
 
         try:
@@ -799,7 +836,8 @@ def main(page: ft.page):
     # Formulario agregar computadora variables ----------------------------------------------------------------------
     nombreNuevoEquipo = ft.TextField(label="Nombre de equipo")
     marcaNuevoEquipo = ft.TextField(label="Marca")
-    nombreClienteNuevoEquipo = ft.TextField(label="Nombre Cliente", width=290)
+    nombreClienteNuevoEquipo = ft.TextField(label="Nombre Cliente")
+    tipoNuevoEquipo = ft.TextField(label="Tipo Equipo", width=290)
     estadoNuevoEquipo = ft.TextField(label="Estado")
     observacionNuevoEquipo = ft.TextField(label="Observaciones")
     # Botones para agregar
@@ -818,8 +856,10 @@ def main(page: ft.page):
                     # Nombre  del Equipo Modelo
                     ft.Container(nombreNuevoEquipo, bgcolor=ft.colors.WHITE10),
 
+                    ft.Container(nombreClienteNuevoEquipo, bgcolor=ft.colors.WHITE10),
+
                     # Marca del equipo y Nombre del cliente
-                    ft.Container(ft.Row([ft.Container(marcaNuevoEquipo, bgcolor=ft.colors.WHITE10),ft.Container(nombreClienteNuevoEquipo,bgcolor=ft.colors.WHITE10),])),
+                    ft.Container(ft.Row([ft.Container(marcaNuevoEquipo, bgcolor=ft.colors.WHITE10),ft.Container(tipoNuevoEquipo,bgcolor=ft.colors.WHITE10),])),
 
                     # Estado del Equipo
                     ft.Container(estadoNuevoEquipo, bgcolor=ft.colors.WHITE10),
@@ -881,8 +921,6 @@ def main(page: ft.page):
             data = response.json()
         except requests.exceptions.RequestException as e:
             data = "Error al Obtener datos"
-        #with open('pruebaclientes.json', 'r') as file:
-            #data = json.load(file)
         clientes_registrados = []
         for i in data:
             nombreClienteEquipoLabel = ft.Text(i['nombre'], color='#3F4450', size=19, weight='w500')
@@ -891,7 +929,7 @@ def main(page: ft.page):
             clientes_registrados.append(
                 ft.Container(
                     ft.Container(ft.Column([ft.Row([nombreClienteEquipoLabel, ft.IconButton(icon=ft.icons.DELETE_FOREVER_ROUNDED,icon_color="#3EC99D",icon_size=30,tooltip="Borrar Equipo",on_click=lambda e, cliente=i: openmodal_ClienteDel(e, cliente)), ], alignment=ft.MainAxisAlignment.SPACE_BETWEEN),
-                        ft.Row([ft.Container(celularClienteEquipoLabel, padding=ft.padding.only(0,-25)),ft.Container(ft.ElevatedButton(content=ft.Text('Ver/Editar', color='white',weight='w100', ),bgcolor='#3F4450', on_hover=on_hover, on_click=lambda e, equipo=i: show_bs(e, equipo)))], alignment=ft.MainAxisAlignment.SPACE_BETWEEN),
+                        ft.Row([ft.Container(celularClienteEquipoLabel, padding=ft.padding.only(0,-25)),ft.Container(ft.ElevatedButton(content=ft.Text('Ver/Editar', color='white',weight='w100', ),bgcolor='#3F4450', on_hover=on_hover, on_click=lambda e, cliente=i: show_bsCliente(e, cliente)))], alignment=ft.MainAxisAlignment.SPACE_BETWEEN),
                         ft.Container(emailClienteEquipoLabel, padding=ft.padding.only(0,-20))
                     ], spacing=0), width=560),border=ft.border.all(0.5, color='#8993A7'), width=665, border_radius=3,padding=ft.padding.only(25, 7, 20, 7)
                 )
@@ -905,6 +943,7 @@ def main(page: ft.page):
         nombreNuevoCliente.value = ""
         correoNuevoCliente.value = ""
         celulardelNuevoCliente.value = ""
+        labelCorreoCliente.value = ''
         agregar_Cliente.open = False
         agregar_Cliente.update()
 
@@ -945,19 +984,56 @@ def main(page: ft.page):
             contenedorListarClientes.controls.extend(leerClientesRegistrados())
             contenedorListarClientes.update()
         except requests.exceptions.RequestException as err:
-            print(f"Error al eliminar el equipo con ID {id_Cliente}: {err}")
+            print(f"Error al eliminar el Cliente con ID {id_Cliente}: {err}")
 
         # Cierra el diálogo después de eliminar
         close_dlg(e)
 
+    def validarCorreoCliente(e) -> None:
+        pattern = r'^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$'
+        aux = re.match(pattern,correoNuevoCliente.value) is not None
+        if aux:
+            labelCorreoCliente.value=''
+            registrarClientesButton.disabled = False
+        else:
+            labelCorreoCliente.value='Ingresa un correo Válido'
+            registrarClientesButton.disabled = True
+
+        page.update()
+
+    def registrarCliente(e):
+        url = "https://tesis-kphi.onrender.com/api/cliente"
+        headers = {'Content-Type': 'application/json'}
+        data = {
+            "correo": correoNuevoCliente.value,
+            "nombre": nombreNuevoCliente.value,
+            "telefono": celulardelNuevoCliente.value,
+        }
+        try:
+            response = requests.post(url, json=data, headers=headers)
+            response.raise_for_status()  # Verificar si la solicitud tuvo éxito
+            print("Cliente creado exitosamente")
+            contenedorListarClientes.controls.clear()
+            contenedorListarClientes.controls.extend(leerClientesRegistrados())
+            contenedorListarClientes.update()
+            clienteTab.update()
+            inicio.update()
+            page.update()
+            close_agCliente(e)
+        except requests.exceptions.RequestException as e:
+            labelCorreoCliente.value = 'Error en la solicitud'
+
+
+
     # Formulario agregar cliente variables ----------------------------------------------------------------------
+    labelCorreoCliente = ft.Text('', width=360, size=12, weight='w900', text_align='center', color=ft.colors.RED)
     nombreNuevoCliente = ft.TextField(label="Nombre del Cliente")
-    correoNuevoCliente = ft.TextField(label="Correo Electronico del Cliente")
+    correoNuevoCliente = ft.TextField(label="Correo Electronico del Cliente", on_change=validarCorreoCliente, on_focus=validarCorreoCliente)
     celulardelNuevoCliente = ft.TextField(label="Celular del Cliente", width=290)
 
     # Botones para agregar
 
-    registrarClientesButton = ft.ElevatedButton(content=ft.Text('Registrar Cliente', color='white', weight='w300'),bgcolor='#3F4450', on_hover=on_hover, tooltip="Registra un nuevo cliente")
+    registrarClientesButton = ft.ElevatedButton(content=ft.Text('Registrar Cliente', color='white', weight='w300'),bgcolor='#3F4450', on_hover=on_hover, tooltip="Registra un nuevo cliente", on_click=registrarCliente)
     cancelarRegistroCliente = ft.ElevatedButton(content=ft.Text('Cancelar Registro', color='white', weight='w300'),bgcolor='#3F4450', on_hover=on_hover, on_click=close_agCliente)
 
 
@@ -977,7 +1053,7 @@ def main(page: ft.page):
                     # Correo electronico y celular del cliente
                     ft.Container(ft.Row([ft.Container(correoNuevoCliente, bgcolor=ft.colors.WHITE10),
                                          ft.Container(celulardelNuevoCliente, bgcolor=ft.colors.WHITE10), ])),
-
+                    ft.Container(labelCorreoCliente),
                     # ----------------------------Botones Crear------------------------------------------------
                     ft.Container(
                         ft.Row([cancelarRegistroCliente, registrarClientesButton], alignment=ft.MainAxisAlignment.SPACE_AROUND),
@@ -986,7 +1062,229 @@ def main(page: ft.page):
             ), padding=20, height=400, width=700
         ), open=False, is_scroll_controlled=True, dismissible=False
     )
+    def show_bsCliente(e, cliente):
+        nombreClienteEditar.value = cliente['nombre']
+        id_ClienteEdit.value = cliente['id']
+        correoClienteEditar.value = cliente['correo']
+        celularClienteEditar.value = cliente['telefono']
+        page.client_storage.set("nombreClienteEdit", cliente['nombre'])
+        contenedorListarEquiposCliente.controls.clear()
+        contenedorListarEquiposCliente.controls.extend(leerEquiposCliente(e, id_ClienteEdit.value))
+        contenedorListarEquiposCliente.update()
+        editarVer_Cliente.open = True
+        editarVer_Cliente.update()
+    def close_bsCliente(e):
+        editarVer_Cliente.open = False
+        editarVer_Cliente.update()
+
+    def editarClienteFormulario(e):
+        page.client_storage.set("nombreCliente", nombreClienteEditar.value,)
+        page.client_storage.set("correoCliente", correoClienteEditar.value,)
+        page.client_storage.set("telefonoCliente", celularClienteEditar.value,)
+        nombreClienteEditar.read_only = False
+        nombreClienteEditar.update()
+        correoClienteEditar.read_only = False
+        correoClienteEditar.update()
+        celularClienteEditar.read_only = False
+        celularClienteEditar.update()
+        cerrarFormularioEditClienteButton.disabled = True
+        cerrarFormularioEditClienteButton.update()
+        actualizarClienteButton.disabled = False
+        actualizarClienteButton.update()
+        cancelarEditClienteButton.disabled = False
+        cancelarEditClienteButton.update()
+        editarClienteButton.disabled = True
+        editarClienteButton.update()
+
+    # Funcion para cancelar la edicion de formulario
+    def cancelarEditClienteFormulario(e):
+        nombreClienteEditar.value = page.client_storage.get("nombreCliente")
+        correoClienteEditar.value = page.client_storage.get("correoCliente")
+        celularClienteEditar.value = page.client_storage.get("telefonoCliente")
+        nombreClienteEditar.read_only = True
+        nombreClienteEditar.update()
+        correoClienteEditar.read_only = True
+        correoClienteEditar.update()
+        celularClienteEditar.read_only = True
+        celularClienteEditar.update()
+        cerrarFormularioEditClienteButton.disabled = False
+        cerrarFormularioEditClienteButton.update()
+        actualizarClienteButton.disabled = True
+        actualizarClienteButton.update()
+        cancelarEditClienteButton.disabled = True
+        cancelarEditClienteButton.update()
+        editarClienteButton.disabled = False
+        editarClienteButton.update()
+    def validarCorreoClienteEdit(e) -> None:
+        pattern = r'^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$'
+        aux = re.match(pattern,correoClienteEditar.value) is not None
+        if aux:
+            labelEditarCliente.value=''
+            actualizarClienteButton.disabled = False
+        else:
+            labelEditarCliente.value='Ingresa un correo Válido'
+            actualizarClienteButton.disabled = True
+
+        page.update()
+    def ActualizarCliente(e):
+        page.client_storage.set("nombreCliente", nombreClienteEditar.value,)
+        page.client_storage.set("correoCliente", correoClienteEditar.value,)
+        page.client_storage.set("telefonoCliente", celularClienteEditar.value,)
+        id = id_ClienteEdit.value
+        url = f"https://tesis-kphi.onrender.com/api/cliente/{id}"
+        headers = {'Content-Type': 'application/json'}
+        data = {
+            "correo": correoClienteEditar.value,
+            "nombre": nombreClienteEditar.value,
+            "telefono": celularClienteEditar.value,
+        }
+
+        try:
+            response = requests.put(url, json=data, headers=headers)
+            response.raise_for_status()  # Verificar si la solicitud tuvo éxito
+            print("Cliente editado exitosamente")
+            contenedorListarClientes.controls.clear()
+            contenedorListarClientes.controls.extend(leerClientesRegistrados())
+            contenedorListarClientes.update()
+            contenedorListarEquiposCliente.controls.clear()
+            contenedorListarEquiposCliente.controls.extend(leerEquiposCliente(e, id_ClienteEdit.value))
+            contenedorListarEquiposCliente.update()
+            clienteTab.update()
+            inicio.update()
+            page.update()
+            cancelarEditClienteFormulario(e)
+        except requests.exceptions.RequestException as e:
+            print(e)
+            labelEditarCliente.value = 'Error Actualizando Datos'
+
+
+    def whatsapp_redirect(e):
+        webbrowser.open_new_tab(f'https://wa.me/593{celularClienteEditar.value}')
+
+    def handle_Click(e, equipo):
+        close_bsCliente(e)
+        show_bs(e, equipo)
+
+    def handleClick_AG(e):
+        close_bsCliente(e)
+        show_agEq(e)
+        nombreClienteNuevoEquipo.value = page.client_storage.get("nombreClienteEdit")
+        nombreClienteNuevoEquipo.update()
+
+    def leerEquiposCliente(e, id):
+        url = f'https://tesis-kphi.onrender.com/api/equipos/cliente/{id}'
+        try:
+            response = requests.get(url)
+            response.raise_for_status()
+            data = response.json()
+            nombre_cliente = page.client_storage.get("nombreClienteEdit")
+            for item in data:
+                item["nombre_cliente"] = nombre_cliente
+
+            print("Obteniendo Datos")
+        except requests.exceptions.RequestException as e:
+            data = "Error al Obtener datos"
+            print("ERROR Obteniendo equipos")
+        equipos_cliente = []
+        for i in data:
+            estadoJson = i['estado']
+            if estadoJson.lower() == 'listo':
+                estadoEquipoLabel = ft.Text("En estado: ", color=ft.colors.WHITE, size=17, weight='w400', spans=[
+                    ft.TextSpan(estadoJson, ft.TextStyle(color='#3EC99D', weight='w500'))])
+            else:
+                estadoEquipoLabel = ft.Text("En estado: ", color=ft.colors.WHITE, size=17, weight='w400',spans=[ft.TextSpan(estadoJson, ft.TextStyle(color='#FF914D', weight='w500'))])
+            nombreEquipoLabel = ft.Text(f"{i['marca']} {i['modelo']}", color=ft.colors.WHITE, size=19, weight='w500')
+            observaciones = ft.Text("Observaciones:", color='#3EC99D', size=17, weight='w400',spans=[ft.TextSpan(i['observaciones'], ft.TextStyle(color=ft.colors.WHITE, weight='w400'))])
+
+            equipos_cliente.append(
+                ft.Container(
+                    ft.Container(ft.Column([ft.Row([nombreEquipoLabel,
+                                                    ft.IconButton(icon=ft.icons.DELETE_FOREVER_ROUNDED,
+                                                                  icon_color="#3EC99D", icon_size=20,
+                                                                  tooltip="Borrar Equipo",
+                                                                  on_click=lambda e, equipo=i: open_dlg_modal(e, equipo)), ],
+                                                   alignment=ft.MainAxisAlignment.SPACE_BETWEEN),
+                                            ft.Row(
+                                                [ft.Container(estadoEquipoLabel, padding=ft.padding.only(0, -20)),
+                                                 ft.Container(ft.ElevatedButton(
+                                                     content=ft.Text('Ver/Editar', color='white', weight='w100', ),
+                                                     bgcolor='#3F4450', on_hover=on_hover,
+                                                     on_click=lambda e, equipo=i: handle_Click(e, equipo)))],
+                                                alignment=ft.MainAxisAlignment.SPACE_BETWEEN),
+                                            ft.Container(observaciones, padding=ft.padding.only(0,-12))
+                                            ], spacing=0), width=560), border=ft.border.all(0.5, color='#8993A7'),
+                    width=665, border_radius=3, padding=ft.padding.only(25, 7, 20, 7)
+                )
+            )
+        return equipos_cliente
+
+
+
+    nombreClienteEditar = ft.TextField(label="Nombre del Cliente", value='', read_only=True)
+    correoClienteEditar = ft.TextField(label="Correo del Cliente", value='', read_only=True, on_focus=validarCorreoClienteEdit, on_change=validarCorreoClienteEdit)
+    celularClienteEditar = ft.TextField(label="Celular del Cliente", width=290, value='', read_only=True, keyboard_type=ft.KeyboardType.NUMBER)
+    id_ClienteEdit = ft.TextField(value="", read_only=True, border="none", text_size=15)
+    labelEditarCliente = ft.Text('', width=360, size=12, weight='w900', text_align='center', color=ft.colors.RED)
+
+    actualizarClienteButton = ft.ElevatedButton(content=ft.Text('Actualizar Datos', color='white', weight='w300'),
+                                             bgcolor='#3F4450', on_hover=on_hover, tooltip="Actualiza los cambios",
+                                             disabled=True, on_click=ActualizarCliente)
+    cancelarEditClienteButton = ft.ElevatedButton(content=ft.Text('Cancelar Cambios', color='white', weight='w300'),
+                                           bgcolor='#3F4450', on_hover=on_hover, disabled=True,
+                                           on_click=cancelarEditClienteFormulario)
+    editarClienteButton = ft.ElevatedButton(content=ft.Text('Editar Información', color='white', weight='w300'),
+                                     bgcolor='#3F4450', on_hover=on_hover, on_click=editarClienteFormulario)
+    cerrarFormularioEditClienteButton = ft.ElevatedButton(content=ft.Text('Cerrar Formulario', color='white', weight='w300'),
+                                               bgcolor='#3F4450', on_hover=on_hover, on_click=close_bsCliente)
+
+    contenedorListarEquiposCliente = ft.Column(scroll=ft.ScrollMode.ALWAYS, height=205)
+    editarVer_Cliente = ft.BottomSheet(
+        ft.Container(
+            ft.Column(
+                [
+                    # Contenido del formulario antes de los botones
+                    ft.Container(ft.Text("Información de ", size=35,
+                                         spans=[ft.TextSpan("Cliente", ft.TextStyle(color='#3EC99D'))]),
+                                 alignment=ft.alignment.center, padding=ft.padding.only(0, 10)),
+
+                    # ID -------------------------------------------------------------
+                    ft.Container(
+                        ft.Row([ft.Container(ft.Text("ID:", size=15, color='#3EC99D')), ft.Container(id_ClienteEdit)],
+                               alignment=ft.MainAxisAlignment.CENTER), padding=ft.padding.only(260, -25), margin=0),
+                    # Boton Ver Historial --------------------------------------------
+                    ft.Container(ft.Row([ft.Container(ft.TextButton("Agregar Equipo", style=ft.ButtonStyle(color=ft.colors.WHITE), on_click=handleClick_AG),
+                                 alignment=ft.alignment.center_right, margin=0, padding=ft.padding.only(0, 0)),
+                                         ft.Container(ft.TextButton("Contactar", style=ft.ButtonStyle(color=ft.colors.WHITE), on_click=whatsapp_redirect),
+                                 alignment=ft.alignment.center_right, margin=0, padding=ft.padding.only(0, 0)),], alignment=ft.MainAxisAlignment.SPACE_BETWEEN),),
+                    ft.Container(labelEditarCliente),
+                    # TextField nombre del Cliente ------------------------------------
+                    ft.Container(nombreClienteEditar, bgcolor=ft.colors.WHITE10),
+
+                    # Text Fields con el celular, y el correo del cliente --------------
+                    ft.Container(ft.Row([ft.Container(correoClienteEditar, bgcolor=ft.colors.WHITE10),
+                                         ft.Container(celularClienteEditar, bgcolor=ft.colors.WHITE10), ])),
+
+                    # ----------------------------Botones Editar------------------------------------------------
+                    ft.Container(ft.Row([editarClienteButton, cerrarFormularioEditClienteButton, ],
+                                        alignment=ft.MainAxisAlignment.SPACE_AROUND), padding=ft.padding.only(0, -1)),
+                    # ----------------------------Botones Ya editando------------------------------------------------
+                    ft.Container(ft.Row([actualizarClienteButton, cancelarEditClienteButton, ],
+                                        alignment=ft.MainAxisAlignment.SPACE_AROUND), padding=ft.padding.only(0, 0)),
+
+                    ft.Container(ft.Text("Equipos ", size=25,
+                                         spans=[ft.TextSpan("Registrados", ft.TextStyle(color='#3EC99D'))]),
+                                 alignment=ft.alignment.center),
+                    ft.Container(contenedorListarEquiposCliente),
+                ], tight=True, spacing=8
+            ), padding=20, height=900, width=700,
+        ), open=False, is_scroll_controlled=True, dismissible=False
+    )
+
+
+
     contenedorListarClientes = ft.Column(controls=leerClientesRegistrados(), scroll=ft.ScrollMode.ALWAYS, height=415)
+
+
     clienteTab = ft.Container(
                 ft.Column(controls=[
                     header,
@@ -1323,6 +1621,7 @@ def main(page: ft.page):
     page.window_resizable= False
     page.window_maximizable = False
     page.overlay.append(editarVer_Equipo)
+    page.overlay.append(editarVer_Cliente)
     page.overlay.append(agregar_Equipo)
     page.overlay.append(agregar_Cliente)
     page.overlay.append(date_picker)
