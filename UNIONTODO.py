@@ -1,3 +1,6 @@
+import os
+import sys
+
 import flet as ft
 import re
 import requests
@@ -9,11 +12,27 @@ from reportlab.lib.styles import getSampleStyleSheet
 from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle, Image
 from reportlab.lib import colors
 from datetime import datetime
+import getpass
 
+usuario_actual = getpass.getuser()
 valorNombreAdmin = ""
 valorCelAdmin = ""
 valCorreoAdmin = ""
 
+
+def resource_path(relative_path):
+    """ Get the absolute path to the resource, works for both development and PyInstaller """
+    try:
+        # PyInstaller creates a temp folder and stores path in _MEIPASS
+        base_path = sys._MEIPASS
+    except Exception:
+        base_path = os.path.abspath(".")
+
+    return os.path.join(base_path, relative_path)
+
+
+imageLogo = resource_path('assets/logo.png')
+imageLogoName = resource_path('assets/logoName.png')
 def agregar_encabezado(canvas, doc, logo_path, logo_name_path):
     canvas.saveState()
     canvas.drawImage(logo_path, 40, 720, width=1.8 * inch, height=1.5 * inch,
@@ -210,17 +229,17 @@ def main(page: ft.page):
                 ft.Column(controls=[
                     # Contenedor con el logo
                     ft.Container(
-                        ft.Image(src='assets/logo.png', width=350, ),
+                        ft.Image(src=imageLogo, width=350, ),
                         padding=ft.padding.only(180, 1)
                     ),
                     ft.Container(
-                        ft.Image(src='assets/logoName.png', width=350, ),
+                        ft.Image(src=imageLogoName, width=350, ),
                         padding=ft.padding.only(180, -10)
                     ),
                     # Texto Bienvenida
                     ft.Container(
                         ft.Text('Bienvenido', width=360, size=20, weight='w900', text_align='center', color='#3F4450'),
-                        padding=ft.padding.only(170, -20)
+                        padding=ft.padding.only(170, -18)
                     ),
                     ft.Container(
                         label2,
@@ -273,11 +292,11 @@ def main(page: ft.page):
                 ft.Column(controls=[
                     # Contenedor con el logo
                     ft.Container(
-                        ft.Image(src='assets/logo.png', width=350, ),
+                        ft.Image(src=imageLogo, width=350, ),
                         padding=ft.padding.only(180, 1)
                     ),
                     ft.Container(
-                        ft.Image(src='assets/logoName.png', width=350, ),
+                        ft.Image(src=imageLogoName, width=350, ),
                         padding=ft.padding.only(180, -10)
                     ),
                     # Texto Bienvenida
@@ -326,11 +345,11 @@ def main(page: ft.page):
                 ft.Column(controls=[
                     # Contenedor con el logo
                     ft.Container(
-                        ft.Image(src='assets/logo.png', width=350, ),
+                        ft.Image(src=imageLogo, width=350, ),
                         padding=ft.padding.only(180, 1)
                     ),
                     ft.Container(
-                        ft.Image(src='assets/logoName.png', width=350, ),
+                        ft.Image(src=imageLogoName, width=350, ),
                         padding=ft.padding.only(180, -10)
                     ),
                     # Texto Bienvenida
@@ -398,6 +417,10 @@ def main(page: ft.page):
         e.control.bgcolor = "#3EC99D" if e.data == "true" else "#3F4450"
         e.control.update()
 
+    def handle_ClickEditar_Historial(e):
+        close_bs(e)
+        equipo = page.client_storage.get("equipoCache")
+        show_bsHistorial(e, equipo)
     # Funcion para que el formulario de editar se abra con la información actual, y abajo para cerrar
     def show_bs(e, equipo):
         nombreEquipoEdit.value = equipo['modelo']
@@ -406,6 +429,7 @@ def main(page: ft.page):
         equipoMarcaEdit.value = equipo['marca']
         nombreClienteEdit.value = equipo['nombre_cliente']
         observacionActualEdit.value = equipo['observaciones']
+        page.client_storage.set("equipoCache", equipo)
 
         url = "https://tesis-kphi.onrender.com/api/clientes"
         try:
@@ -597,6 +621,280 @@ def main(page: ft.page):
         return equipos_pendientes
 
     # Funciones Globales ------------------------------------------------------------------------------------------------------------------------
+
+
+    def handle_ClickBusquedaEstado(e, equipo):
+        close_busqueda(e)
+        show_bs(e, equipo)
+    def handle_ClickBusquedaEstadoCliente(e, cliente):
+        close_busqueda(e)
+        show_bsCliente(e, cliente)
+    def close_busqueda(e):
+        ver_ResultadoBusqueda.open = False
+        ver_ResultadoBusqueda.update()
+    def show_Busqueda(e, campo):
+        busquedaText.value = ''
+        busquedaText.update()
+        header.update()
+        page.update()
+        if campo.lower() == 'en espera' or campo.lower() == 'en mantenimiento' or campo.lower() == 'listo' or campo.lower() == 'ingresado' or campo.lower() == 'entregado':
+            contenedorResultadoBusqueda.controls.clear()
+            contenedorResultadoBusqueda.controls.extend(buscarEstado(e, campo))
+            contenedorResultadoBusqueda.update()
+        else:
+            resultados = []
+
+            urlModelo = f"https://tesis-kphi.onrender.com/api/equipos/modelo/{campo}"
+            try:
+                response = requests.get(urlModelo)
+                response.raise_for_status()
+                data = response.json()
+                print(f"Código de estado: {response.status_code}")
+            except requests.exceptions.RequestException as e:
+                data = "Error al Obtener datos"
+                print("ERROR Obteniendo equipos")
+
+            if isinstance(data, list) and data:
+                for i in data:
+                    nombre = buscarNombre(e, i['id_cliente'])
+                    i["nombre_cliente"] = nombre
+                    nombreClienteEquipoLabel = ft.Text(i["nombre_cliente"], color=ft.colors.WHITE, size=17, weight='w400')
+                    estadoJson = i['estado']
+                    if estadoJson.lower() == 'listo':
+                        estadoEquipoLabel = ft.Text("En estado: ", color=ft.colors.WHITE, size=17, weight='w400', spans=[
+                            ft.TextSpan(estadoJson, ft.TextStyle(color='#3EC99D', weight='w500'))])
+                    else:
+                        estadoEquipoLabel = ft.Text("En estado: ", color=ft.colors.WHITE, size=17, weight='w400', spans=[
+                            ft.TextSpan(estadoJson, ft.TextStyle(color='#FF914D', weight='w500'))])
+
+                    nombreEquipoLabel = ft.Text(f"{i['marca']} {i['modelo']}", color=ft.colors.WHITE, size=19,
+                                                weight='w500')
+                    observaciones = ft.Text("Observaciones:", color='#3EC99D', size=17, weight='w400', spans=[
+                        ft.TextSpan(i['observaciones'], ft.TextStyle(color=ft.colors.WHITE, weight='w400'))])
+
+                    resultados.append(
+                        ft.Container(
+                            ft.Container(ft.Column([ft.Row([nombreEquipoLabel],
+                                                           alignment=ft.MainAxisAlignment.SPACE_BETWEEN),
+                                                    ft.Container(nombreClienteEquipoLabel, padding=ft.padding.only(0)),
+                                                    ft.Row(
+                                                        [ft.Container(estadoEquipoLabel, padding=ft.padding.only(0, -20)),
+                                                         ft.Container(ft.ElevatedButton(
+                                                             content=ft.Text('Ver/Editar', color='white', weight='w100', ),
+                                                             bgcolor='#3F4450', on_hover=on_hover,
+                                                             on_click=lambda e, equipo=i: handle_ClickBusquedaEstado(e,equipo)))],
+                                                        alignment=ft.MainAxisAlignment.SPACE_BETWEEN),
+                                                    ft.Container(observaciones, padding=ft.padding.only(0, -12)),
+                                                    ], spacing=0), width=560), border=ft.border.all(0.5, color='#8993A7'),
+                            width=665, border_radius=3, padding=ft.padding.only(25, 7, 20, 7)
+                        )
+                    )
+
+
+            urlMarca = f"https://tesis-kphi.onrender.com/api/equipos/marca/{campo}"
+            try:
+                response = requests.get(urlMarca)
+                response.raise_for_status()
+                data = response.json()
+                print(f"Código de estado: {response.status_code}")
+            except requests.exceptions.RequestException as e:
+                data = "Error al Obtener datos"
+                print("ERROR Obteniendo equipos")
+
+            if isinstance(data, list) and data:
+                for i in data:
+                    nombre = buscarNombre(e, i['id_cliente'])
+                    i["nombre_cliente"] = nombre
+                    nombreClienteEquipoLabel = ft.Text(i["nombre_cliente"], color=ft.colors.WHITE, size=17, weight='w400')
+                    estadoJson = i['estado']
+                    if estadoJson.lower() == 'listo':
+                        estadoEquipoLabel = ft.Text("En estado: ", color=ft.colors.WHITE, size=17, weight='w400', spans=[
+                            ft.TextSpan(estadoJson, ft.TextStyle(color='#3EC99D', weight='w500'))])
+                    else:
+                        estadoEquipoLabel = ft.Text("En estado: ", color=ft.colors.WHITE, size=17, weight='w400', spans=[
+                            ft.TextSpan(estadoJson, ft.TextStyle(color='#FF914D', weight='w500'))])
+
+                    nombreEquipoLabel = ft.Text(f"{i['marca']} {i['modelo']}", color=ft.colors.WHITE, size=19,
+                                                weight='w500')
+                    observaciones = ft.Text("Observaciones:", color='#3EC99D', size=17, weight='w400', spans=[
+                        ft.TextSpan(i['observaciones'], ft.TextStyle(color=ft.colors.WHITE, weight='w400'))])
+
+                    resultados.append(
+                        ft.Container(
+                            ft.Container(ft.Column([ft.Row([nombreEquipoLabel],
+                                                           alignment=ft.MainAxisAlignment.SPACE_BETWEEN),
+                                                    ft.Container(nombreClienteEquipoLabel, padding=ft.padding.only(0)),
+                                                    ft.Row(
+                                                        [ft.Container(estadoEquipoLabel, padding=ft.padding.only(0, -20)),
+                                                         ft.Container(ft.ElevatedButton(
+                                                             content=ft.Text('Ver/Editar', color='white', weight='w100', ),
+                                                             bgcolor='#3F4450', on_hover=on_hover,
+                                                             on_click=lambda e, equipo=i: handle_ClickBusquedaEstado(e,equipo)))],
+                                                        alignment=ft.MainAxisAlignment.SPACE_BETWEEN),
+                                                    ft.Container(observaciones, padding=ft.padding.only(0, -12)),
+                                                    ], spacing=0), width=560), border=ft.border.all(0.5, color='#8993A7'),
+                            width=665, border_radius=3, padding=ft.padding.only(25, 7, 20, 7)
+                        )
+                    )
+
+            urlNombre = "https://tesis-kphi.onrender.com/api/clientes"
+            try:
+                response = requests.get(urlNombre)
+                response.raise_for_status()
+                data = response.json()
+                print(f"Código de estado Nombre: {response.status_code}")
+            except requests.exceptions.RequestException as e:
+                data = "Error al Obtener datos"
+            for i in data:
+                if i['nombre'].lower() == campo.lower():
+                    nombreClienteEquipoLabel = ft.Text(i['nombre'], color=ft.colors.WHITE, size=19, weight='w500')
+                    celularClienteEquipoLabel = ft.Text(i['telefono'], color=ft.colors.WHITE, size=17, weight='w400')
+                    emailClienteEquipoLabel = ft.Text(i['correo'], color=ft.colors.WHITE, size=17, weight='w400')
+                    resultados.append(
+                        ft.Container(
+                            ft.Container(ft.Column([ft.Row([nombreClienteEquipoLabel],
+                                                           alignment=ft.MainAxisAlignment.SPACE_BETWEEN),
+                                                    ft.Row([ft.Container(celularClienteEquipoLabel,
+                                                                         padding=ft.padding.only(0)), ft.Container(
+                                                        ft.ElevatedButton(
+                                                            content=ft.Text('Ver/Editar', color='white', weight='w100', ),
+                                                            bgcolor='#3F4450', on_hover=on_hover,
+                                                            on_click=lambda e, cliente=i: handle_ClickBusquedaEstadoCliente(e, cliente)))],
+                                                           alignment=ft.MainAxisAlignment.SPACE_BETWEEN),
+                                                    ft.Container(emailClienteEquipoLabel, padding=ft.padding.only(0))
+                                                    ], spacing=0), width=560), border=ft.border.all(0.5, color='#8993A7'),
+                            width=665, border_radius=3, padding=ft.padding.only(25, 7, 20, 7)
+                        )
+                    )
+
+                    urlPorNombre = f"https://tesis-kphi.onrender.com/api/equipos/cliente/{i['id']}"
+                    try:
+                        response = requests.get(urlPorNombre)
+                        response.raise_for_status()
+                        data = response.json()
+                        print(f"Código de estado: {response.status_code}")
+                    except requests.exceptions.RequestException as e:
+                        data = "Error al Obtener datos"
+                        print("ERROR Obteniendo equipos")
+
+                    if isinstance(data, list) and data:
+                        for d in data:
+                            nombre = buscarNombre(e, d['id_cliente'])
+                            d["nombre_cliente"] = nombre
+                            nombreClienteEquipoLabel = ft.Text(d["nombre_cliente"], color=ft.colors.WHITE, size=17,
+                                                               weight='w400')
+                            estadoJson = d['estado']
+                            if estadoJson.lower() == 'listo':
+                                estadoEquipoLabel = ft.Text("En estado: ", color=ft.colors.WHITE, size=17,
+                                                            weight='w400', spans=[
+                                        ft.TextSpan(estadoJson, ft.TextStyle(color='#3EC99D', weight='w500'))])
+                            else:
+                                estadoEquipoLabel = ft.Text("En estado: ", color=ft.colors.WHITE, size=17,
+                                                            weight='w400', spans=[
+                                        ft.TextSpan(estadoJson, ft.TextStyle(color='#FF914D', weight='w500'))])
+
+                            nombreEquipoLabel = ft.Text(f"{d['marca']} {d['modelo']}", color=ft.colors.WHITE, size=19,
+                                                        weight='w500')
+                            observaciones = ft.Text("Observaciones:", color='#3EC99D', size=17, weight='w400', spans=[
+                                ft.TextSpan(d['observaciones'], ft.TextStyle(color=ft.colors.WHITE, weight='w400'))])
+
+                            resultados.append(
+                                ft.Container(
+                                    ft.Container(ft.Column([ft.Row([nombreEquipoLabel],
+                                                                   alignment=ft.MainAxisAlignment.SPACE_BETWEEN),
+                                                            ft.Container(nombreClienteEquipoLabel,
+                                                                         padding=ft.padding.only(0)),
+                                                            ft.Row(
+                                                                [ft.Container(estadoEquipoLabel,
+                                                                              padding=ft.padding.only(0, -20)),
+                                                                 ft.Container(ft.ElevatedButton(
+                                                                     content=ft.Text('Ver/Editar', color='white',
+                                                                                     weight='w100', ),
+                                                                     bgcolor='#3F4450', on_hover=on_hover,
+                                                                     on_click=lambda e,
+                                                                                     equipo=d: handle_ClickBusquedaEstado(
+                                                                         e, equipo)))],
+                                                                alignment=ft.MainAxisAlignment.SPACE_BETWEEN),
+                                                            ft.Container(observaciones,
+                                                                         padding=ft.padding.only(0, -12)),
+                                                            ], spacing=0), width=560),
+                                    border=ft.border.all(0.5, color='#8993A7'),
+                                    width=665, border_radius=3, padding=ft.padding.only(25, 7, 20, 7)
+                                )
+                            )
+
+
+
+            resultados.append(
+                ft.Container(
+                    ft.Container(ft.Column([ft.Text("NO HAY MÁS RESULTADOS", color=ft.colors.WHITE, size=17, weight='w400')], spacing=0), width=560), border=ft.border.all(0.5, color='#8993A7'),
+                    width=665, border_radius=3, padding=ft.padding.only(25, 7, 20, 7)
+                )
+            )
+            contenedorResultadoBusqueda.controls.clear()
+            contenedorResultadoBusqueda.controls.extend(resultados)
+            contenedorResultadoBusqueda.update()
+
+        ver_ResultadoBusqueda.open = True
+        ver_ResultadoBusqueda.update()
+
+    def buscarNombre(e, id):
+        url = f"https://tesis-kphi.onrender.com/api/cliente/{id}"
+        try:
+            response = requests.get(url)
+            response.raise_for_status()
+            data = response.json()
+            nombre = data['nombre']
+        except requests.exceptions.RequestException as e:
+            data = "Error al Obtener el Nombre"
+            nombre = "No encontrado"
+            print("ERROR Obteniendo el Nombre")
+        return nombre
+
+    def buscarEstado(e, campo):
+        url = f"https://tesis-kphi.onrender.com/api/equipos/estado/{campo}"
+        try:
+            response = requests.get(url)
+            response.raise_for_status()
+            data = response.json()
+            print(f"Código de estado: {response.status_code}")
+        except requests.exceptions.RequestException as e:
+            data = "Error al Obtener datos"
+            print("ERROR Obteniendo equipos")
+        equipos_encontrado = []
+        for i in data:
+            nombre = buscarNombre(e, i['id_cliente'])
+            i["nombre_cliente"] = nombre
+            nombreClienteEquipoLabel = ft.Text(i["nombre_cliente"], color=ft.colors.WHITE, size=17, weight='w400')
+            estadoJson = i['estado']
+            if estadoJson.lower() == 'listo':
+                estadoEquipoLabel = ft.Text("En estado: ", color=ft.colors.WHITE, size=17, weight='w400', spans=[
+                    ft.TextSpan(estadoJson, ft.TextStyle(color='#3EC99D', weight='w500'))])
+            else:
+                estadoEquipoLabel = ft.Text("En estado: ", color=ft.colors.WHITE, size=17, weight='w400',spans=[ft.TextSpan(estadoJson, ft.TextStyle(color='#FF914D', weight='w500'))])
+
+            nombreEquipoLabel = ft.Text(f"{i['marca']} {i['modelo']}", color=ft.colors.WHITE, size=19, weight='w500')
+            observaciones = ft.Text("Observaciones:", color='#3EC99D', size=17, weight='w400',spans=[ft.TextSpan(i['observaciones'], ft.TextStyle(color=ft.colors.WHITE, weight='w400'))])
+
+            equipos_encontrado.append(
+                ft.Container(
+                    ft.Container(ft.Column([ft.Row([nombreEquipoLabel],
+                                                   alignment=ft.MainAxisAlignment.SPACE_BETWEEN),
+                                            ft.Container(nombreClienteEquipoLabel, padding=ft.padding.only(0)),
+                                            ft.Row(
+                                                [ft.Container(estadoEquipoLabel, padding=ft.padding.only(0, -20)),
+                                                 ft.Container(ft.ElevatedButton(
+                                                     content=ft.Text('Ver/Editar', color='white', weight='w100', ),
+                                                     bgcolor='#3F4450', on_hover=on_hover,
+                                                     on_click=lambda e, equipo=i: handle_ClickBusquedaEstado(e, equipo)))],
+                                                alignment=ft.MainAxisAlignment.SPACE_BETWEEN),
+                                            ft.Container(observaciones, padding=ft.padding.only(0,-12)),
+                                            ], spacing=0), width=560), border=ft.border.all(0.5, color='#8993A7'),
+                    width=665, border_radius=3, padding=ft.padding.only(25, 7, 20, 7)
+                )
+            )
+        return equipos_encontrado
+
     # Tabs de navegación
     page.navigation_bar = ft.NavigationBar(bgcolor="#3F4450",height=65,indicator_color=ft.colors.TRANSPARENT,overlay_color='#3EC99D',indicator_shape=ft.ContinuousRectangleBorder(radius=20),on_change=changetab,selected_index=0,
         destinations=[
@@ -607,7 +905,22 @@ def main(page: ft.page):
         ],)
 
     # Barra de busqueda general
-    busquedaText = ft.TextField(width=650, height=35, label="Buscar Cliente/Equipo/ID", color='#3F4450',border_color='#3F4450',border_radius=20,label_style=ft.TextStyle(color='#3F4450'), prefix_icon=ft.icons.SEARCH, focused_border_color='#3EC99D')
+    botonBusqueda = ft.IconButton(icon=ft.icons.SEARCH,icon_size=30, icon_color="#3EC99D",on_click=lambda e: show_Busqueda(e, busquedaText.value))
+    busquedaText = ft.TextField(width=470, height=42, label="Buscar", color='#3F4450',border_color='#3F4450',border_radius=20,label_style=ft.TextStyle(color='#3F4450'), focused_border_color='#3EC99D')
+
+    contenedorResultadoBusqueda = ft.Column(scroll=ft.ScrollMode.ALWAYS, height=580)
+    ver_ResultadoBusqueda = ft.BottomSheet(
+        ft.Container(
+            ft.Column(
+                [
+                    # Contenido del formulario antes de los botones
+                    ft.Container(ft.Text("Resultado  ", size=35, spans=[ft.TextSpan("Busqueda", ft.TextStyle(color='#3EC99D'))]), alignment=ft.alignment.center, padding=ft.padding.only(0,25)),
+                    ft.Container(contenedorResultadoBusqueda),
+                ],tight=True, spacing=8
+            ),padding=20, height=900, width=700,
+        ),open=False, is_scroll_controlled=True, #dismissible=False
+    )
+
 # ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
     def eliminarEquipo(e, id_Equipo):
         # Construye la URL con el ID del equipo
@@ -778,8 +1091,8 @@ def main(page: ft.page):
 
     # Header Principal
     header = ft.Row([
-        ft.Container(ft.Row([ft.Container(ft.Image(src='assets/logo.png', width=100), padding=ft.padding.only(10, 5)), ft.Container(ft.Image(src='assets/logoName.png', width=245), padding=ft.padding.only(15, 15))])),
-        ft.Container(ft.Row([busquedaText,ft.Container(ft.IconButton(icon=ft.icons.EXIT_TO_APP, icon_color='#3EC99D', icon_size=45,tooltip="Cerrar Sesión", padding=ft.padding.only(60, 0, 20), on_click=open_cerrarSesion_modal))])
+        ft.Container(ft.Row([ft.Container(ft.Image(src=imageLogo, width=100), padding=ft.padding.only(10, 5)), ft.Container(ft.Image(src=imageLogoName, width=245), padding=ft.padding.only(15, 15))])),
+        ft.Container(ft.Row([busquedaText,botonBusqueda,ft.Container(ft.IconButton(icon=ft.icons.EXIT_TO_APP, icon_color='#3EC99D', icon_size=45,tooltip="Cerrar Sesión", padding=ft.padding.only(60, 0, 20), on_click=open_cerrarSesion_modal))])
         )], alignment=ft.MainAxisAlignment.SPACE_BETWEEN)
 
 
@@ -855,7 +1168,8 @@ def main(page: ft.page):
     cancelarEditButton = ft.ElevatedButton(content=ft.Text('Cancelar Cambios', color='white', weight='w300'),bgcolor='#3F4450', on_hover=on_hover, disabled=True, on_click=cancelarEditFormulario)
 
 
-
+    def whatsapp_redirectEdit(e):
+        webbrowser.open_new_tab(f'https://wa.me/593{celularClienteEdit.value}')
     # Formulario de Ver/Editar datos Computadoras
 
     editarVer_Equipo = ft.BottomSheet(
@@ -869,7 +1183,10 @@ def main(page: ft.page):
                     ft.Container(ft.Row([ft.Container(ft.Text("ID:", size=25, color='#3EC99D')),ft.Container(id_EquipoEdit)], alignment=ft.MainAxisAlignment.CENTER), padding=ft.padding.only(180,-25), margin=0),
 
                     # Boton Ver Historial --------------------------------------------
-                    ft.Container(ft.TextButton("Ver historial", style=ft.ButtonStyle(color=ft.colors.WHITE)), alignment=ft.alignment.center_right, margin=0, padding=ft.padding.only(0,-20)),
+                    ft.Container(ft.Row([
+                                     ft.Container(ft.TextButton("Contactar", style=ft.ButtonStyle(color=ft.colors.WHITE), on_click=whatsapp_redirectEdit), alignment=ft.alignment.center_right, margin=0, padding=ft.padding.only(0,-5)),
+                                 ft.Container(ft.TextButton("Ver historial", style=ft.ButtonStyle(color=ft.colors.WHITE), on_click=lambda e:handle_ClickEditar_Historial(e)), alignment=ft.alignment.center_right, margin=0, padding=ft.padding.only(0,-5))], alignment=ft.MainAxisAlignment.SPACE_BETWEEN)),
+                    #ft.Container(ft.TextButton("Ver historial", style=ft.ButtonStyle(color=ft.colors.WHITE), on_click=lambda e:handle_ClickEditar_Historial(e)), alignment=ft.alignment.center_right, margin=0, padding=ft.padding.only(0,-5)),
 
                     # TextField nombre del equipo ------------------------------------
                     ft.Container(nombreEquipoEdit, bgcolor=ft.colors.WHITE10),
@@ -953,7 +1270,7 @@ def main(page: ft.page):
                 "nombre Cliente": nombreClienteNuevoEquipo.value,
                 "observaciones": data2['observaciones'],
             }
-            crear_ficha_tecnica(f"ficha_tecnica_ingreso_{data2['id']}.pdf", data, logo_path, logo_name_path, telefono=00000)
+            crear_ficha_tecnica(f"C:/Users/{usuario_actual}/Desktop/ficha_tecnica_ingreso_{data2['id']}.pdf", data, logo_path, logo_name_path, telefono=00000)
             open_ExitoModal()
         except requests.exceptions.RequestException as e:
             open_ErrorModal(e)
@@ -1001,8 +1318,8 @@ def main(page: ft.page):
     )
 
 
-    contenedorEquiposPendientes = ft.Column(controls=leerClientesPendiente(), scroll=ft.ScrollMode.ALWAYS, height=415)
-    contenedorEquiposListos = ft.Column(controls=leerClientesListo(), scroll=ft.ScrollMode.ALWAYS, height=415)
+    contenedorEquiposPendientes = ft.Column(controls=leerClientesPendiente(), scroll=ft.ScrollMode.ALWAYS, height=390)
+    contenedorEquiposListos = ft.Column(controls=leerClientesListo(), scroll=ft.ScrollMode.ALWAYS, height=390)
 # -------------------------------------------------------------------------------------------------------------------------------------------------------------------------
     # Pestaña Home Principal
     homeTab = ft.Container(
@@ -1010,28 +1327,28 @@ def main(page: ft.page):
                     header,
                     ft.Divider(height=5, thickness=1),
                     # Texto titular
-                    ft.Row([ft.Text(" "),ft.Text(" "), ft.Container(ft.Text('Bienvenido Nuevamente ', width=380, size=22, weight='w250', text_align='center',color='#3F4450',spans=[ft.TextSpan("Técnico", ft.TextStyle(color='#3EC99D'))]), alignment=ft.alignment.center,padding=ft.padding.only(0,10,0,5)),
+                    ft.Row([ft.Text(" "),ft.Text(" "), ft.Container(ft.Text('Bienvenido Nuevamente ', width=380, size=22, weight='w250', text_align='center',color='#3F4450',spans=[ft.TextSpan("Técnico", ft.TextStyle(color='#3EC99D'))]), alignment=ft.alignment.center,padding=ft.padding.only(0,5,0,5)),
                             ft.ElevatedButton(content=ft.Text('Agregar Equipo',color='white',weight='w300',),bgcolor='#3F4450', on_hover=on_hover, on_click=show_agEq )],alignment=ft.MainAxisAlignment.SPACE_AROUND),
 
                     # Contenedores de los dos cuadritos principales
                     ft.Container(
                         ft.Row([
                             ft.Container(ft.Column([
-                                ft.Container(ft.Text("Equipos ", width=380, size=20, weight='w250', text_align='center', color='#3F4450',spans=[ft.TextSpan("Pendientes", ft.TextStyle(color='#3EC99D'))]), alignment=ft.alignment.center,padding=ft.padding.only(0,0,0,20)),
+                                ft.Container(ft.Text("Equipos ", width=380, size=18, weight='w250', text_align='center', color='#3F4450',spans=[ft.TextSpan("Pendientes", ft.TextStyle(color='#3EC99D'))]), alignment=ft.alignment.center,padding=ft.padding.only(0,0,0,5)),
                                 # Columna para desplegar las tarjetas de información en equipos pendientes
                                 contenedorEquiposPendientes
-                            ]),width=670, height=495, border_radius=30, border=ft.border.all(1.5, color='#8993A7'), padding=ft.padding.all(10)
+                            ]),width=620, height=460, border_radius=30, border=ft.border.all(1.5, color='#8993A7'), padding=ft.padding.all(5)
                             ),
                             # Segundo contenedor
                             ft.Container(ft.Column([
-                                ft.Container(ft.Text("Equipos ", width=380, size=20, weight='w250', text_align='center',color='#3F4450',spans=[ft.TextSpan("Por Retirar", ft.TextStyle(color='#3EC99D'))]),alignment=ft.alignment.center, padding=ft.padding.only(0, 0, 0, 20)),
+                                ft.Container(ft.Text("Equipos ", width=380, size=18, weight='w250', text_align='center',color='#3F4450',spans=[ft.TextSpan("Por Retirar", ft.TextStyle(color='#3EC99D'))]),alignment=ft.alignment.center, padding=ft.padding.only(0, 0, 0, 5)),
 
                                 # Columna para desplegar las tarjetas de información de equipos listos
                                 contenedorEquiposListos
-                            ]), width=670, height=495, border_radius=30, border=ft.border.all(1.5, color='#8993A7'),padding=ft.padding.all(10)
+                            ]), width=620, height=460, border_radius=30, border=ft.border.all(1.5, color='#8993A7'),padding=ft.padding.all(5)
                             ),
                         ], alignment=ft.MainAxisAlignment.SPACE_BETWEEN),)
-                ]), visible= True, width=1400, height=715
+                ]), visible= True, width=1300, height=670
     )
 
 
@@ -1363,7 +1680,7 @@ def main(page: ft.page):
     cerrarFormularioEditClienteButton = ft.ElevatedButton(content=ft.Text('Cerrar Formulario', color='white', weight='w300'),
                                                bgcolor='#3F4450', on_hover=on_hover, on_click=close_bsCliente)
 
-    contenedorListarEquiposCliente = ft.Column(scroll=ft.ScrollMode.ALWAYS, height=205)
+    contenedorListarEquiposCliente = ft.Column(scroll=ft.ScrollMode.ALWAYS, height=200)
     editarVer_Cliente = ft.BottomSheet(
         ft.Container(
             ft.Column(
@@ -1375,7 +1692,7 @@ def main(page: ft.page):
 
                     # ID -------------------------------------------------------------
                     ft.Container(
-                        ft.Row([ft.Container(ft.Text("ID:", size=15, color='#3EC99D')), ft.Container(id_ClienteEdit)],
+                        ft.Row([ft.Container(ft.Text("ID:", size=18, color='#3EC99D')), ft.Container(id_ClienteEdit)],
                                alignment=ft.MainAxisAlignment.CENTER), padding=ft.padding.only(260, -25), margin=0),
                     # Boton Ver Historial --------------------------------------------
                     ft.Container(ft.Row([ft.Container(ft.TextButton("Agregar Equipo", style=ft.ButtonStyle(color=ft.colors.WHITE), on_click=handleClick_AG),
@@ -1417,19 +1734,19 @@ def main(page: ft.page):
                     header,
                     ft.Divider(height=5, thickness=1),
                     # Texto titular
-                    ft.Row([ft.Text(" "), ft.Container(ft.Text('Registro de ', width=380, size=22, weight='w250', text_align='center',color='#3F4450',spans=[ft.TextSpan("Clientes", ft.TextStyle(color='#3EC99D'))]), alignment=ft.alignment.center,padding=ft.padding.only(150,10,0,5)),
+                    ft.Row([ft.Text(" "), ft.Container(ft.Text('Registro de ', width=380, size=22, weight='w250', text_align='center',color='#3F4450',spans=[ft.TextSpan("Clientes", ft.TextStyle(color='#3EC99D'))]), alignment=ft.alignment.center,padding=ft.padding.only(150,5,0,5)),
                             ft.ElevatedButton(content=ft.Text('Agregar Cliente',color='white',weight='w300',),bgcolor='#3F4450', on_hover=on_hover, on_click=show_agCliente)],alignment=ft.MainAxisAlignment.SPACE_AROUND),
 
                     # Contenedores de los dos cuadritos principales
                     ft.Container(
                             ft.Container(ft.Column([
-                                ft.Container(ft.Text("Clientes ", width=380, size=20, weight='w250', text_align='center', color='#3F4450',spans=[ft.TextSpan("Registros", ft.TextStyle(color='#3EC99D'))]), alignment=ft.alignment.center,padding=ft.padding.only(0,0,0,20)),
+                                ft.Container(ft.Text("Clientes ", width=380, size=20, weight='w250', text_align='center', color='#3F4450',spans=[ft.TextSpan("Registros", ft.TextStyle(color='#3EC99D'))]), alignment=ft.alignment.center,padding=ft.padding.only(0,0,0,5)),
                                 # Columna para desplegar las tarjetas de información en equipos pendientes
                                 ft.Container(contenedorListarClientes)
-                                ]),width=670, height=495, border_radius=30, border=ft.border.all(1.5, color='#8993A7'), padding=ft.padding.all(10)
+                                ]),width=670, height=472, border_radius=30, border=ft.border.all(1.5, color='#8993A7'), padding=ft.padding.all(5)
                             ), alignment=ft.alignment.center
                     )
-                ]), visible= True, width=1400, height=715
+                ]), visible= True, width=1300, height=670
     )
 
 
@@ -1457,7 +1774,7 @@ def main(page: ft.page):
                 ft.Container(
                     ft.Container(ft.Column([ft.Container(idEquipoLabel), ft.Container(nombreEquipoLabel),
                                             ft.Row(
-                                                [ft.Container(estadoEquipoLabel, padding=ft.padding.only(0, -20)),
+                                                [ft.Container(estadoEquipoLabel, padding=ft.padding.only(0, -13)),
                                                  ft.Container(ft.ElevatedButton(
                                                      content=ft.Text('Ver/Editar', color='white', weight='w100', ),
                                                      bgcolor='#3F4450', on_hover=on_hover,
@@ -1470,25 +1787,62 @@ def main(page: ft.page):
             )
         return equipos_historial
 
+
+
+    def leerHistorial(e, id):
+        url = f'https://tesis-kphi.onrender.com/api/mantenimiento/equipo/{id}'
+        try:
+            response = requests.get(url)
+            response.raise_for_status()
+            data = response.json()
+
+            print("Obteniendo Datos")
+            mantenimientos = data.get('mantenimientos', [])
+            equipos_historial = []
+            for mantenimiento in mantenimientos:
+                estado_actual = mantenimiento.get("estado_actual")
+                descripcion = mantenimiento.get("descripcion")
+                fecha = mantenimiento.get("fecha")
+
+                fechaHistorial = ft.Text("Fecha: ", color='#3EC99D', size=17, weight='w400', spans=[
+                    ft.TextSpan(fecha, ft.TextStyle(color=ft.colors.WHITE, weight='w400'))])
+
+                estadoHistorial = ft.Text("Estado: ", color='#3EC99D', size=16, weight='w400', spans=[
+                    ft.TextSpan(estado_actual, ft.TextStyle(color=ft.colors.WHITE, weight='w300'))])
+
+                descripcionHistorial = ft.Text("Observacion Dada: ", color='#FF914D', size=16, weight='w400', spans=[
+                    ft.TextSpan(descripcion, ft.TextStyle(color=ft.colors.WHITE, weight='w300'))])
+
+                equipos_historial.append(
+                    ft.Container(
+                        ft.Container(ft.Column([
+                            ft.Container(fechaHistorial, padding=ft.padding.only(0, -12)),
+                            ft.Container(estadoHistorial, padding=ft.padding.only(0, -12)),
+                            ft.Container(descripcionHistorial, padding=ft.padding.only(0, -12)),
+                                                ], spacing=15), width=560), border=ft.border.all(0.5, color='#8993A7'),
+                        width=665, border_radius=3, padding=ft.padding.only(25, 15, 20, 7)
+                    )
+                )
+        except requests.exceptions.RequestException as e:
+            print(f"ERROR Obteniendo equipos {e}")
+        return equipos_historial
+
+
     def whatsapp_redirectHIST(e):
         webbrowser.open_new_tab(f'https://wa.me/593{celularClienteHist.value}')
 
     def handle_ClickHistorial(e):
         close_bsHistorial(e)
         equipo = page.client_storage.get("equipoCache")
-        print(f"PRUEBA HANDLE: {equipo}")
         show_bs(e, equipo)
     def close_bsHistorial(e):
         ver_historialEquipo.open = False
         ver_historialEquipo.update()
     def show_bsHistorial(e, equipo):
-        print(equipo)
         nombreEquipoHist.value = f"{equipo['marca']} {equipo['modelo']}"
         id_EquipoHist.value = equipo['id']
         nombreClienteHist.value = equipo['nombre_cliente']
         page.client_storage.set("equipoCache", equipo)
-        aux = page.client_storage.get("equipoCache")
-        print(f"PRUEBA: {aux}")
         url = "https://tesis-kphi.onrender.com/api/clientes"
         try:
             response = requests.get(url)
@@ -1511,22 +1865,24 @@ def main(page: ft.page):
             else:
                 celularClienteHist.value = ""
 
-
+        contenedorRegistroHistorico.controls.clear()
+        contenedorRegistroHistorico.controls.extend(leerHistorial(e, id_EquipoHist.value))
+        contenedorRegistroHistorico.update()
         ver_historialEquipo.open = True
         ver_historialEquipo.update()
 
     contenedorHistorialEquipos = ft.Column(controls=leerEquiposHistorial(), scroll=ft.ScrollMode.ALWAYS, height=415)
 
     id_EquipoHist = ft.TextField(value="", read_only=True, border="none", text_size=25)
-    nombreEquipoHist = ft.TextField(label="Nombre de equipo", value="", disabled=True)
-    nombreClienteHist = ft.TextField(label="Nombre Cliente", value="", disabled=True)
-    celularClienteHist = ft.TextField(label="Celular Cliente", value="", width=290, disabled=True)
+    nombreEquipoHist = ft.TextField(label="Nombre de equipo", value="", read_only=True)
+    nombreClienteHist = ft.TextField(label="Nombre Cliente", value="", read_only=True)
+    celularClienteHist = ft.TextField(label="Celular Cliente", value="", width=290, read_only=True)
 
     cerrarHistorialButton = ft.ElevatedButton(
         content=ft.Text('Cerrar Pestaña', color='white', weight='w300'),
         bgcolor='#3F4450', on_hover=on_hover, on_click=close_bsHistorial)
 
-
+    contenedorRegistroHistorico = ft.Column(scroll=ft.ScrollMode.ALWAYS, height=200)
     ver_historialEquipo = ft.BottomSheet(
         ft.Container(
             ft.Column(
@@ -1556,9 +1912,14 @@ def main(page: ft.page):
                     ft.Container(ft.Row([ft.Container(nombreClienteHist,bgcolor=ft.colors.WHITE10),ft.Container(celularClienteHist, bgcolor=ft.colors.WHITE10),])),
 
                     ft.Divider(height=5, thickness=1),
-                    ft.Container(cerrarHistorialButton, alignment=ft.alignment.center)
+                    ft.Container(cerrarHistorialButton, alignment=ft.alignment.center),
+                    ft.Divider(height=5, thickness=1),
+                    ft.Container(ft.Text("Historial ", size=25,
+                                         spans=[ft.TextSpan("Mantenimiento", ft.TextStyle(color='#3EC99D'))]),
+                                 alignment=ft.alignment.center),
+                    ft.Container(contenedorRegistroHistorico),
                 ],tight=True, spacing=8
-            ),padding=20, height=900, width=700,
+            ),padding=20, height=700, width=700,
         ),open=False, is_scroll_controlled=True, dismissible=False
     )
 
@@ -1568,24 +1929,24 @@ def main(page: ft.page):
                     header,
                     ft.Divider(height=5, thickness=1),
                     ft.Container(
-                        ft.Text('Pestaña ', width=380, size=22, weight='w250', text_align='center', color='#3F4450',
+                        ft.Text('Pestaña ', width=380, size=20, weight='w250', text_align='center', color='#3F4450',
                                 spans=[ft.TextSpan("Historial", ft.TextStyle(color='#3EC99D'))]),
-                        alignment=ft.alignment.center, padding=ft.padding.only(0, 10)),
+                        alignment=ft.alignment.center, padding=ft.padding.only(0, 5)),
 
                     ft.Container(
                         ft.Container(ft.Column([
                             ft.Container(ft.Text("Equipos ", width=380, size=20, weight='w250', text_align='center',
                                                  color='#3F4450',
                                                  spans=[ft.TextSpan("Registrados", ft.TextStyle(color='#3EC99D'))]),
-                                         alignment=ft.alignment.center, padding=ft.padding.only(0, 0, 0, 20)),
+                                         alignment=ft.alignment.center, padding=ft.padding.only(0, 0, 0, 5)),
                             # Columna para desplegar las tarjetas de información en equipos pendientes
                             ft.Container(contenedorHistorialEquipos)
-                        ]), width=715, height=495, border_radius=30, border=ft.border.all(1.5, color='#8993A7'),
-                            padding=ft.padding.all(10)
+                        ]), width=715, height=480, border_radius=30, border=ft.border.all(1.5, color='#8993A7'),
+                            padding=ft.padding.all(5)
                         ), alignment=ft.alignment.center
                     )
 
-                ]), visible= False, width=1400, height=715
+                ]), visible= False, width=1300, height=670
     )
 
 # --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -1839,7 +2200,7 @@ def main(page: ft.page):
                     # Contenedores de los dos cuadritos principales
                     ft.Container(
                             ft.Container(ft.Column([
-                                ft.Container(ft.Text("Información del ", width=380, size=20, weight='w250', text_align='center', color='#3F4450',spans=[ft.TextSpan("Técnico", ft.TextStyle(color='#3EC99D'))]), alignment=ft.alignment.center,padding=ft.padding.only(0,0,0,20)),
+                                ft.Container(ft.Text("Información del ", width=380, size=28, weight='w250', text_align='center', color='#3F4450',spans=[ft.TextSpan("Técnico", ft.TextStyle(color='#3EC99D'))]), alignment=ft.alignment.center,padding=ft.padding.only(0,-20,0,2)),
                                 # Columna para desplegar las tarjetas de información en equipos pendientes
                                 ft.Container(ft.Column([
                                     nombreAdminText,
@@ -1856,7 +2217,7 @@ def main(page: ft.page):
                                     ft.Container(ft.Row([
                                         ft.Container(botonEditar), ft.Container(botonCancelarEditar)
                                     ], alignment=ft.MainAxisAlignment.SPACE_BETWEEN)),
-                                    ft.Container(ft.Divider(height=5, thickness=1, color='#8993A7')),
+                                    ft.Container(ft.Divider(height=7, thickness=1, color='#8993A7'), padding=ft.padding.only(0,5,0,5)),
                                     ft.Container(ft.Row([
                                         passActualText, passNuevaText
                                     ], alignment=ft.MainAxisAlignment.SPACE_BETWEEN)),
@@ -1867,11 +2228,11 @@ def main(page: ft.page):
                                     ft.Container(ft.Row([
                                         botonActuPass, botonCancelarPass
                                     ], alignment=ft.MainAxisAlignment.SPACE_BETWEEN)),
-                                ], scroll=ft.ScrollMode.ALWAYS,height=520, spacing=10))
-                                ]),width=670, height=500, border_radius=30, border=ft.border.all(1.5, color='#8993A7'), padding=ft.padding.only(20,40,20,20)
+                                ], scroll=ft.ScrollMode.ALWAYS,height=480, spacing=10))
+                                ]),width=670, height=520, border_radius=30, border=ft.border.all(1.5, color='#8993A7'), padding=ft.padding.only(20,40,20,20)
                             ), alignment=ft.alignment.center
                     )
-                ]), visible= True, width=1400, height=715
+                ]), visible= True, width=1300, height=670
     )
 
     inicio = ft.Container(
@@ -1879,19 +2240,20 @@ def main(page: ft.page):
         )
 
 
-    page.window_width = 1500
-    page.window_height = 800
+    page.window_width = 1300
+    page.window_height = 750
     page.vertical_alignment = "center"
     page.horizontal_alignment = "center"
     page.bgcolor = ft.colors.WHITE
     page.title = 'Hackers Internet'
     page.window_resizable= False
-    page.window_maximizable = False
+    page.window_maximizable = True
     page.overlay.append(editarVer_Equipo)
     page.overlay.append(editarVer_Cliente)
     page.overlay.append(agregar_Equipo)
     page.overlay.append(agregar_Cliente)
     page.overlay.append(ver_historialEquipo)
+    page.overlay.append(ver_ResultadoBusqueda)
     page.add(
         ventana
     )
