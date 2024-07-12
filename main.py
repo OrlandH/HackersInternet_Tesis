@@ -1,8 +1,9 @@
 import os
 import sys
-
+import timeit
 import flet as ft
 import re
+import psutil
 import requests
 import webbrowser
 from reportlab.lib.pagesizes import A4
@@ -18,53 +19,31 @@ usuario_actual = getpass.getuser()
 valorNombreAdmin = ""
 valorCelAdmin = ""
 valCorreoAdmin = ""
-
+urlEndpoint = 'URL DEL BACKEND'
 
 def resource_path(relative_path):
-    """ Get the absolute path to the resource, works for both development and PyInstaller """
     try:
-        # PyInstaller creates a temp folder and stores path in _MEIPASS
         base_path = sys._MEIPASS
     except Exception:
         base_path = os.path.abspath(".")
-
     return os.path.join(base_path, relative_path)
-
 
 imageLogo = resource_path('assets/logo.png')
 imageLogoName = resource_path('assets/logoName.png')
 def agregar_encabezado(canvas, doc, logo_path, logo_name_path):
     canvas.saveState()
-    canvas.drawImage(logo_path, 40, 720, width=1.8 * inch, height=1.5 * inch,
-                     mask='auto')  # Ajustar tamaño y posición del logo principal
-    canvas.drawImage(logo_name_path, 200, 750, width=4 * inch, height=0.5 * inch,
-                     mask='auto')  # Ajustar tamaño y posición del segundo logo
+    canvas.drawImage(logo_path, 40, 720, width=1.8 * inch, height=1.5 * inch,mask='auto')
+    canvas.drawImage(logo_name_path, 200, 750, width=4 * inch, height=0.5 * inch,mask='auto')
     canvas.line(40, 712, 550, 712)
     canvas.setFont("Helvetica-Bold", 14)
     canvas.drawString(150, 695, "Ficha Técnica de Ingreso para Mantenimiento")
     canvas.restoreState()
-
-
 # Función para crear la tabla de datos
 def crear_tabla_de_datos(data):
     styles = getSampleStyleSheet()
     styleN = styles["BodyText"]
-
-    # Obtener la fecha actual
     fecha_actual = datetime.now().strftime("%Y-%m-%d")
-
-    # Datos para la tabla
-    tabla_data = [
-        ["Fecha Ingreso:", fecha_actual],
-        ["ID", data["id"]],
-        ["Marca", data["marca"]],
-        ["Modelo", data["modelo"]],
-        ["Estado", data["estado"]],
-        ["Nombre Cliente", data["nombre Cliente"]],
-        ["Observaciones", data["observaciones"]]
-    ]
-
-    # Crear tabla
+    tabla_data = [["Fecha Ingreso:", fecha_actual],["ID", data["id"]],["Marca", data["marca"]],["Modelo", data["modelo"]],["Estado", data["estado"]],["Nombre Cliente", data["nombre Cliente"]],["Observaciones", data["observaciones"]]]
     tabla = Table(tabla_data, colWidths=[150, 300])
     tabla.setStyle(TableStyle([
         ('BACKGROUND', (0, 0), (-1, 0), colors.grey),
@@ -121,7 +100,7 @@ def main(page: ft.page):
         ventana.update()
 
     def login_admin(e):
-        url = "https://tesis-kphi.onrender.com/api/admin/login"
+        url = f"{urlEndpoint}/admin/login"
         headers = {'Content-Type': 'application/json'}
         data = {
             "correo": correoElectronico.value,
@@ -129,7 +108,15 @@ def main(page: ft.page):
         }
 
         try:
+            print(f"FUNCION [login]\n--------------------------------------------")
+
+            start_time = timeit.default_timer()  # Iniciar tiempo de ejecución
+            cpu_usage_before = psutil.cpu_percent()  # Uso de CPU antes de la solicitud
+
             response = requests.post(url, json=data, headers=headers)
+
+
+
             # Verificar si la solicitud tuvo éxito
             if response.status_code == 200:
                 response_data = response.json()
@@ -141,37 +128,38 @@ def main(page: ft.page):
                 page.client_storage.set("correo", response_data.get("correo"))
                 page.client_storage.set("telefono", response_data.get("telefono"))
                 inicioExitoso()
+
             else:
-                print(f"Error en el login: {response.status_code}")
                 label.value = "Credenciales Incorrectas"
                 passLogin.value = ''
                 page.update()
+
+            end_time = timeit.default_timer()  # Finalizar tiempo de ejecución
+            cpu_usage_after = psutil.cpu_percent()  # Uso de CPU después de la solicitud
+            execution_time = end_time - start_time  # Tiempo total de ejecución en segundos
+            # Mostrar resultados de rendimiento
+            print(f"Tiempo de ejecución: {execution_time:.4f} segundos")
+            print(f"Uso de CPU antes: {cpu_usage_before}%")
+            print(f"Uso de CPU después: {cpu_usage_after}%")
+
         except requests.exceptions.RequestException as e:
-            print(f"Error al realizar la solicitud: {e}")
-            label.value="Error con el servidor"
+            label.value = "Error con el servidor"
             passLogin.value = ''
             page.update()
     def recuperar_admin(e):
-        url = "https://tesis-kphi.onrender.com/api/admin/recuperar-password"
+        url = f"{urlEndpoint}/admin/recuperar-password"
         headers = {'Content-Type': 'application/json'}
-        data = {
-            "correo": correoElectronico.value,
-        }
+        data = {"correo": correoElectronico.value,}
         try:
             response = requests.post(url, json=data, headers=headers)
-
             # Verificar si la solicitud tuvo éxito
             if response.status_code == 200:
-                response_data = response.json()
-                print(response_data.get("msg"))
                 claveEnviada(e=None)
             else:
-                print(f"Error en el login: {response.status_code}")
                 label2.value = "Correo Incorrecto"
                 correoElectronico.value = ''
                 page.update()
         except requests.exceptions.RequestException as e:
-            print(f"Error al realizar la solicitud: {e}")
             label2.value="Error con el servidor"
             correoElectronico.value = ''
             page.update()
@@ -423,39 +411,56 @@ def main(page: ft.page):
         show_bsHistorial(e, equipo)
     # Funcion para que el formulario de editar se abra con la información actual, y abajo para cerrar
     def show_bs(e, equipo):
-        nombreEquipoEdit.value = equipo['modelo']
-        id_EquipoEdit.value = equipo['id']
-        estadoEquipoEdit.value = equipo['estado']
-        equipoMarcaEdit.value = equipo['marca']
-        nombreClienteEdit.value = equipo['nombre_cliente']
-        observacionActualEdit.value = equipo['observaciones']
-        page.client_storage.set("equipoCache", equipo)
-
-        url = "https://tesis-kphi.onrender.com/api/clientes"
         try:
-            response = requests.get(url)
-            response.raise_for_status()
-            data = response.json()
-        except requests.exceptions.RequestException as e:
-            print("Error al Obtener datos")
-        for cliente in data:
-            if cliente['nombre'] == equipo['nombre_cliente']:
-                cliente_id = cliente['id']
-                url2 = f"https://tesis-kphi.onrender.com/api/cliente/{cliente_id}"
-                try:
-                    response = requests.get(url2)
-                    response.raise_for_status()
-                    data2 = response.json()
-                    celularClienteEdit.value = data2['telefono']
-                except requests.exceptions.RequestException as e:
-                    print("Error al Obtener Celular del Cliente")
-                break
-            else:
-                celularClienteEdit.value = ""
+            print(f"FUNCION [Ver equipo]\n--------------------------------------------")
+            start_time = timeit.default_timer()  # Iniciar tiempo de ejecución
+            cpu_usage_before = psutil.cpu_percent()  # Uso de CPU antes de la solicitud
+            nombreEquipoEdit.value = equipo['modelo']
+            id_EquipoEdit.value = equipo['id']
+            estadoEquipoEdit.value = equipo['estado']
+            equipoMarcaEdit.value = equipo['marca']
+            nombreClienteEdit.value = equipo['nombre_cliente']
+            observacionActualEdit.value = equipo['observaciones']
+            page.client_storage.set("equipoCache", equipo)
 
+            url = f"{urlEndpoint}/clientes"
+            try:
+
+                response = requests.get(url)
+                response.raise_for_status()
+                data = response.json()
+                for cliente in data:
+                    if cliente['nombre'] == equipo['nombre_cliente']:
+                        cliente_id = cliente['id']
+                        url2 = f"{urlEndpoint}/cliente/{cliente_id}"
+                        try:
+
+                            response = requests.get(url2)
+                            response.raise_for_status()
+                            data2 = response.json()
+                            celularClienteEdit.value = data2['telefono']
+
+                        except requests.exceptions.RequestException as e:
+                            print("Error al Obtener Celular del Cliente")
+                        break
+                    else:
+                        celularClienteEdit.value = ""
+
+                end_time = timeit.default_timer()  # Finalizar tiempo de ejecución
+                cpu_usage_after = psutil.cpu_percent()  # Uso de CPU después de la solicitud
+                execution_time = end_time - start_time  # Tiempo total de ejecución en segundos
+                # Mostrar resultados de rendimiento
+                print(f"Tiempo de ejecución: {execution_time:.4f} segundos")
+                print(f"Uso de CPU antes: {cpu_usage_before}%")
+                print(f"Uso de CPU después: {cpu_usage_after}%")
+            except requests.exceptions.RequestException as e:
+                print("Error al Obtener datos")
+        except Exception as e:
+            print(f"Error en función show_bs: {e}")
 
         editarVer_Equipo.open = True
         editarVer_Equipo.update()
+
     def close_bs(e):
         editarVer_Equipo.open = False
         editarVer_Equipo.update()
@@ -552,73 +557,124 @@ def main(page: ft.page):
 
     # Crear tarjetas de informacion de los clientes listos
     def leerClientesListo():
-        url = "https://tesis-kphi.onrender.com/api/equipos"
+        url = f"{urlEndpoint}/equipos"
         try:
+            print(f"FUNCION [leerClientesListo]\n--------------------------------------------")
+
+            start_time = timeit.default_timer()  # Iniciar tiempo de ejecución
+            cpu_usage_before = psutil.cpu_percent()  # Uso de CPU antes de la solicitud
+
             response = requests.get(url)
             response.raise_for_status()
             data = response.json()
-        except requests.exceptions.RequestException as e:
-            data = "Error al Obtener datos"
-        equipos_Listos = []
-        for i in data:
-            estadoJson = i['estado']
-            estadoListoEquipoLabel = ft.Text("En estado: ", color='#3F4450', size=17, weight='w400',spans=[ft.TextSpan(estadoJson,ft.TextStyle(color='#3EC99D', weight='w500'))])
-            nombreClienteEquipoLabel = ft.Text(i['nombre_cliente'], color='#3F4450', size=17, weight='w400')
-            nombreEquipoLabel = ft.Text(f"{i['marca']} {i['modelo']}", color='#3F4450', size=19, weight='w500')
-            observaciones = ft.Text("Observaciones:", color='#3EC99D', size=17, weight='w400',spans=[ft.TextSpan(i['observaciones'], ft.TextStyle(color='#3F4450', weight='w400'))])
-            if estadoJson.lower() == 'listo' and estadoJson.lower() != 'entregado':
-                equipos_Listos.append(
-                    ft.Container(
-                        ft.Container(ft.Column([
-                            ft.Row([nombreEquipoLabel, ft.IconButton(icon=ft.icons.DELETE_FOREVER_ROUNDED,icon_color="#3EC99D",icon_size=30,tooltip="Borrar Equipo",on_click=lambda e, equipo=i: open_dlg_modal(e, equipo),), ], alignment=ft.MainAxisAlignment.SPACE_BETWEEN),
-                            ft.Row([ft.Container(estadoListoEquipoLabel, padding=ft.padding.only(0,-20)),ft.Container(ft.ElevatedButton(content=ft.Text('Ver/Editar', color='white',weight='w100', ),bgcolor='#3F4450', on_hover=on_hover, on_click=lambda e, equipo=i: show_bs(e, equipo)))], alignment=ft.MainAxisAlignment.SPACE_BETWEEN),
-                            ft.Container(nombreClienteEquipoLabel, padding=ft.padding.only(0,-15)),
-                            observaciones,
-                        ], spacing=0), width=560),
-                        border=ft.border.all(0.5, color='#8993A7'), width=665, border_radius=3,padding=ft.padding.only(25, 7, 20, 7)
+
+
+
+            equipos_Listos = []
+            for i in data:
+                estadoJson = i['estado']
+                estadoListoEquipoLabel = ft.Text("En estado: ", color='#3F4450', size=17, weight='w400', spans=[
+                    ft.TextSpan(estadoJson, ft.TextStyle(color='#3EC99D', weight='w500'))])
+                nombreClienteEquipoLabel = ft.Text(i['nombre_cliente'], color='#3F4450', size=17, weight='w400')
+                nombreEquipoLabel = ft.Text(f"{i['marca']} {i['modelo']}", color='#3F4450', size=19, weight='w500')
+                observaciones = ft.Text("Observaciones:", color='#3EC99D', size=17, weight='w400', spans=[
+                    ft.TextSpan(i['observaciones'], ft.TextStyle(color='#3F4450', weight='w400'))])
+                if estadoJson.lower() == 'listo' and estadoJson.lower() != 'entregado':
+                    equipos_Listos.append(ft.Container(ft.Container(ft.Column([
+                        ft.Row([nombreEquipoLabel,
+                                ft.IconButton(icon=ft.icons.DELETE_FOREVER_ROUNDED, icon_color="#3EC99D", icon_size=30,
+                                              tooltip="Borrar Equipo",
+                                              on_click=lambda e, equipo=i: open_dlg_modal(e, equipo), ), ],
+                               alignment=ft.MainAxisAlignment.SPACE_BETWEEN),
+                        ft.Row([ft.Container(estadoListoEquipoLabel, padding=ft.padding.only(0, -20)), ft.Container(
+                            ft.ElevatedButton(content=ft.Text('Ver/Editar', color='white', weight='w100', ),
+                                              bgcolor='#3F4450', on_hover=on_hover,
+                                              on_click=lambda e, equipo=i: show_bs(e, equipo)))],
+                               alignment=ft.MainAxisAlignment.SPACE_BETWEEN),
+                        ft.Container(nombreClienteEquipoLabel, padding=ft.padding.only(0, -15)),
+                        observaciones, ], spacing=0), width=560),
+                        border=ft.border.all(0.5, color='#8993A7'), width=665, border_radius=3,
+                        padding=ft.padding.only(25, 7, 20, 7))
                     )
-                )
-        return equipos_Listos
+
+            end_time = timeit.default_timer()  # Finalizar tiempo de ejecución
+            cpu_usage_after = psutil.cpu_percent()  # Uso de CPU después de la solicitud
+            execution_time = end_time - start_time  # Tiempo total de ejecución en segundos
+            # Mostrar resultados de rendimiento
+            print(f"Tiempo de ejecución: {execution_time:.4f} segundos")
+            print(f"Uso de CPU antes: {cpu_usage_before}%")
+            print(f"Uso de CPU después: {cpu_usage_after}%")
+
+            return equipos_Listos
+
+        except requests.exceptions.RequestException as e:
+            print("Error al Obtener datos")
+            return []
 
     # Crear tarjetas de información de los clientes pendientes
     def leerClientesPendiente():
-        url = "https://tesis-kphi.onrender.com/api/equipos"
+        url = f"{urlEndpoint}/equipos"
         try:
+            print(f"FUNCION [leerClientesPendiente]\n--------------------------------------------")
+
+            start_time = timeit.default_timer()  # Iniciar tiempo de ejecución
+            cpu_usage_before = psutil.cpu_percent()  # Uso de CPU antes de la solicitud
+
             response = requests.get(url)
             response.raise_for_status()
             data = response.json()
-        except requests.exceptions.RequestException as e:
-            data = "Error al Obtener datos"
-        equipos_pendientes = []
-        for i in data:
-            estadoJson = i['estado']
-            estadoEquipoLabel = ft.Text("En estado: ", color='#3F4450', size=17, weight='w400',spans=[ft.TextSpan(estadoJson, ft.TextStyle(color='#FF914D', weight='w500'))])
-            nombreClienteEquipoLabel = ft.Text(i['nombre_cliente'], color='#3F4450', size=17, weight='w400')
-            nombreEquipoLabel = ft.Text(f"{i['marca']} {i['modelo']}", color='#3F4450', size=19, weight='w500')
-            observaciones = ft.Text("Observaciones:", color='#3EC99D', size=17, weight='w400',spans=[ft.TextSpan(i['observaciones'], ft.TextStyle(color='#3F4450', weight='w400'))])
-            if estadoJson.lower() != 'listo' and estadoJson.lower() != 'entregado':
-                equipos_pendientes.append(
-                    ft.Container(
-                        ft.Container(ft.Column([ft.Row([nombreEquipoLabel,
-                                                        ft.IconButton(icon=ft.icons.DELETE_FOREVER_ROUNDED,
-                                                                      icon_color="#3EC99D", icon_size=30,
-                                                                      tooltip="Borrar Equipo",
-                                                                      on_click=lambda e, equipo=i: open_dlg_modal(e, equipo)), ],
-                                                       alignment=ft.MainAxisAlignment.SPACE_BETWEEN),
-                                                ft.Row(
-                                                    [ft.Container(estadoEquipoLabel, padding=ft.padding.only(0, -20)),
-                                                     ft.Container(ft.ElevatedButton(
-                                                         content=ft.Text('Ver/Editar', color='white', weight='w100', ),
-                                                         bgcolor='#3F4450', on_hover=on_hover,
-                                                         on_click=lambda e, equipo=i: show_bs(e, equipo)))],
-                                                    alignment=ft.MainAxisAlignment.SPACE_BETWEEN),
-                                                ft.Container(nombreClienteEquipoLabel, padding=ft.padding.only(0, -15)),
-                                                observaciones
-                                                ], spacing=0), width=560), border=ft.border.all(0.5, color='#8993A7'),
-                        width=665, border_radius=3, padding=ft.padding.only(25, 7, 20, 7)
+
+
+
+            equipos_pendientes = []
+            for i in data:
+                estadoJson = i['estado']
+                estadoEquipoLabel = ft.Text("En estado: ", color='#3F4450', size=17, weight='w400', spans=[
+                    ft.TextSpan(estadoJson, ft.TextStyle(color='#FF914D', weight='w500'))])
+                nombreClienteEquipoLabel = ft.Text(i['nombre_cliente'], color='#3F4450', size=17, weight='w400')
+                nombreEquipoLabel = ft.Text(f"{i['marca']} {i['modelo']}", color='#3F4450', size=19, weight='w500')
+                observaciones = ft.Text("Observaciones:", color='#3EC99D', size=17, weight='w400', spans=[
+                    ft.TextSpan(i['observaciones'], ft.TextStyle(color='#3F4450', weight='w400'))])
+                if estadoJson.lower() != 'listo' and estadoJson.lower() != 'entregado':
+                    equipos_pendientes.append(
+                        ft.Container(
+                            ft.Container(ft.Column([ft.Row([nombreEquipoLabel,
+                                                            ft.IconButton(icon=ft.icons.DELETE_FOREVER_ROUNDED,
+                                                                          icon_color="#3EC99D", icon_size=30,
+                                                                          tooltip="Borrar Equipo",
+                                                                          on_click=lambda e, equipo=i: open_dlg_modal(e,
+                                                                                                                      equipo)), ],
+                                                           alignment=ft.MainAxisAlignment.SPACE_BETWEEN),
+                                                    ft.Row(
+                                                        [ft.Container(estadoEquipoLabel,
+                                                                      padding=ft.padding.only(0, -20)),
+                                                         ft.Container(ft.ElevatedButton(
+                                                             content=ft.Text('Ver/Editar', color='white',
+                                                                             weight='w100', ),
+                                                             bgcolor='#3F4450', on_hover=on_hover,
+                                                             on_click=lambda e, equipo=i: show_bs(e, equipo)))],
+                                                        alignment=ft.MainAxisAlignment.SPACE_BETWEEN),
+                                                    ft.Container(nombreClienteEquipoLabel,
+                                                                 padding=ft.padding.only(0, -15)),
+                                                    observaciones
+                                                    ], spacing=0), width=560),
+                            border=ft.border.all(0.5, color='#8993A7'),
+                            width=665, border_radius=3, padding=ft.padding.only(25, 7, 20, 7)
+                        )
                     )
-                )
-        return equipos_pendientes
+            end_time = timeit.default_timer()  # Finalizar tiempo de ejecución
+            cpu_usage_after = psutil.cpu_percent()  # Uso de CPU después de la solicitud
+            execution_time = end_time - start_time  # Tiempo total de ejecución en segundos
+            # Mostrar resultados de rendimiento
+            print(f"Tiempo de ejecución: {execution_time:.4f} segundos")
+            print(f"Uso de CPU antes: {cpu_usage_before}%")
+            print(f"Uso de CPU después: {cpu_usage_after}%")
+
+            return equipos_pendientes
+
+        except requests.exceptions.RequestException as e:
+            print("Error al Obtener datos")
+            return []
 
     # Funciones Globales ------------------------------------------------------------------------------------------------------------------------
 
@@ -632,87 +688,89 @@ def main(page: ft.page):
     def close_busqueda(e):
         ver_ResultadoBusqueda.open = False
         ver_ResultadoBusqueda.update()
+
     def show_Busqueda(e, campo):
+        print(f"FUNCION [BUSQUEDA]\n--------------------------------------------")
+        start_time = timeit.default_timer()  # Iniciar tiempo de ejecución
+        cpu_usage_before = psutil.cpu_percent()  # Uso de CPU antes de la solicitud
         busquedaText.value = ''
         busquedaText.update()
         header.update()
         page.update()
-        if campo.lower() == 'en espera' or campo.lower() == 'en mantenimiento' or campo.lower() == 'listo' or campo.lower() == 'ingresado' or campo.lower() == 'entregado':
+        if campo.lower() in ['en espera', 'en mantenimiento', 'listo', 'ingresado', 'entregado']:
             contenedorResultadoBusqueda.controls.clear()
             contenedorResultadoBusqueda.controls.extend(buscarEstado(e, campo))
             contenedorResultadoBusqueda.update()
         else:
             resultados = []
-
-            urlModelo = f"https://tesis-kphi.onrender.com/api/equipos/modelo/{campo}"
+            urlModelo = f"{urlEndpoint}/equipos/modelo/{campo}"
             try:
                 response = requests.get(urlModelo)
                 response.raise_for_status()
                 data = response.json()
-                print(f"Código de estado: {response.status_code}")
-            except requests.exceptions.RequestException as e:
+            except requests.exceptions.RequestException as ex:
                 data = "Error al Obtener datos"
-                print("ERROR Obteniendo equipos")
-
             if isinstance(data, list) and data:
                 for i in data:
                     nombre = buscarNombre(e, i['id_cliente'])
                     i["nombre_cliente"] = nombre
-                    nombreClienteEquipoLabel = ft.Text(i["nombre_cliente"], color=ft.colors.WHITE, size=17, weight='w400')
+                    nombreClienteEquipoLabel = ft.Text(i["nombre_cliente"], color=ft.colors.WHITE, size=17,weight='w400')
                     estadoJson = i['estado']
                     if estadoJson.lower() == 'listo':
-                        estadoEquipoLabel = ft.Text("En estado: ", color=ft.colors.WHITE, size=17, weight='w400', spans=[
-                            ft.TextSpan(estadoJson, ft.TextStyle(color='#3EC99D', weight='w500'))])
+                        estadoEquipoLabel = ft.Text("En estado: ", color=ft.colors.WHITE, size=17, weight='w400',spans=[ft.TextSpan(estadoJson,ft.TextStyle(color='#3EC99D', weight='w500'))])
                     else:
-                        estadoEquipoLabel = ft.Text("En estado: ", color=ft.colors.WHITE, size=17, weight='w400', spans=[
-                            ft.TextSpan(estadoJson, ft.TextStyle(color='#FF914D', weight='w500'))])
-
-                    nombreEquipoLabel = ft.Text(f"{i['marca']} {i['modelo']}", color=ft.colors.WHITE, size=19,
-                                                weight='w500')
-                    observaciones = ft.Text("Observaciones:", color='#3EC99D', size=17, weight='w400', spans=[
-                        ft.TextSpan(i['observaciones'], ft.TextStyle(color=ft.colors.WHITE, weight='w400'))])
-
+                        estadoEquipoLabel = ft.Text("En estado: ", color=ft.colors.WHITE, size=17, weight='w400',spans=[ft.TextSpan(estadoJson,ft.TextStyle(color='#FF914D', weight='w500'))])
+                    nombreEquipoLabel = ft.Text(f"{i['marca']} {i['modelo']}", color=ft.colors.WHITE, size=19,weight='w500')
+                    observaciones = ft.Text("Observaciones:", color='#3EC99D', size=17, weight='w400', spans=[ft.TextSpan(i['observaciones'], ft.TextStyle(color=ft.colors.WHITE, weight='w400'))])
                     resultados.append(
                         ft.Container(
                             ft.Container(ft.Column([ft.Row([nombreEquipoLabel],
                                                            alignment=ft.MainAxisAlignment.SPACE_BETWEEN),
                                                     ft.Container(nombreClienteEquipoLabel, padding=ft.padding.only(0)),
                                                     ft.Row(
-                                                        [ft.Container(estadoEquipoLabel, padding=ft.padding.only(0, -20)),
+                                                        [ft.Container(estadoEquipoLabel,
+                                                                      padding=ft.padding.only(0, -20)),
                                                          ft.Container(ft.ElevatedButton(
-                                                             content=ft.Text('Ver/Editar', color='white', weight='w100', ),
+                                                             content=ft.Text('Ver/Editar', color='white',
+                                                                             weight='w100', ),
                                                              bgcolor='#3F4450', on_hover=on_hover,
-                                                             on_click=lambda e, equipo=i: handle_ClickBusquedaEstado(e,equipo)))],
+                                                             on_click=lambda e, equipo=i: handle_ClickBusquedaEstado(e,
+                                                                                                                     equipo)))],
                                                         alignment=ft.MainAxisAlignment.SPACE_BETWEEN),
                                                     ft.Container(observaciones, padding=ft.padding.only(0, -12)),
-                                                    ], spacing=0), width=560), border=ft.border.all(0.5, color='#8993A7'),
+                                                    ], spacing=0), width=560),
+                            border=ft.border.all(0.5, color='#8993A7'),
                             width=665, border_radius=3, padding=ft.padding.only(25, 7, 20, 7)
                         )
                     )
 
-
-            urlMarca = f"https://tesis-kphi.onrender.com/api/equipos/marca/{campo}"
+            urlMarca = f"{urlEndpoint}/equipos/marca/{campo}"
             try:
                 response = requests.get(urlMarca)
                 response.raise_for_status()
                 data = response.json()
-                print(f"Código de estado: {response.status_code}")
-            except requests.exceptions.RequestException as e:
+
+            except requests.exceptions.RequestException as ex:
                 data = "Error al Obtener datos"
-                print("ERROR Obteniendo equipos")
+
 
             if isinstance(data, list) and data:
                 for i in data:
                     nombre = buscarNombre(e, i['id_cliente'])
                     i["nombre_cliente"] = nombre
-                    nombreClienteEquipoLabel = ft.Text(i["nombre_cliente"], color=ft.colors.WHITE, size=17, weight='w400')
+                    nombreClienteEquipoLabel = ft.Text(i["nombre_cliente"], color=ft.colors.WHITE, size=17,
+                                                       weight='w400')
                     estadoJson = i['estado']
                     if estadoJson.lower() == 'listo':
-                        estadoEquipoLabel = ft.Text("En estado: ", color=ft.colors.WHITE, size=17, weight='w400', spans=[
-                            ft.TextSpan(estadoJson, ft.TextStyle(color='#3EC99D', weight='w500'))])
+                        estadoEquipoLabel = ft.Text("En estado: ", color=ft.colors.WHITE, size=17, weight='w400',
+                                                    spans=[
+                                                        ft.TextSpan(estadoJson,
+                                                                    ft.TextStyle(color='#3EC99D', weight='w500'))])
                     else:
-                        estadoEquipoLabel = ft.Text("En estado: ", color=ft.colors.WHITE, size=17, weight='w400', spans=[
-                            ft.TextSpan(estadoJson, ft.TextStyle(color='#FF914D', weight='w500'))])
+                        estadoEquipoLabel = ft.Text("En estado: ", color=ft.colors.WHITE, size=17, weight='w400',
+                                                    spans=[
+                                                        ft.TextSpan(estadoJson,
+                                                                    ft.TextStyle(color='#FF914D', weight='w500'))])
 
                     nombreEquipoLabel = ft.Text(f"{i['marca']} {i['modelo']}", color=ft.colors.WHITE, size=19,
                                                 weight='w500')
@@ -725,26 +783,31 @@ def main(page: ft.page):
                                                            alignment=ft.MainAxisAlignment.SPACE_BETWEEN),
                                                     ft.Container(nombreClienteEquipoLabel, padding=ft.padding.only(0)),
                                                     ft.Row(
-                                                        [ft.Container(estadoEquipoLabel, padding=ft.padding.only(0, -20)),
+                                                        [ft.Container(estadoEquipoLabel,
+                                                                      padding=ft.padding.only(0, -20)),
                                                          ft.Container(ft.ElevatedButton(
-                                                             content=ft.Text('Ver/Editar', color='white', weight='w100', ),
+                                                             content=ft.Text('Ver/Editar', color='white',
+                                                                             weight='w100', ),
                                                              bgcolor='#3F4450', on_hover=on_hover,
-                                                             on_click=lambda e, equipo=i: handle_ClickBusquedaEstado(e,equipo)))],
+                                                             on_click=lambda e, equipo=i: handle_ClickBusquedaEstado(e,
+                                                                                                                     equipo)))],
                                                         alignment=ft.MainAxisAlignment.SPACE_BETWEEN),
                                                     ft.Container(observaciones, padding=ft.padding.only(0, -12)),
-                                                    ], spacing=0), width=560), border=ft.border.all(0.5, color='#8993A7'),
+                                                    ], spacing=0), width=560),
+                            border=ft.border.all(0.5, color='#8993A7'),
                             width=665, border_radius=3, padding=ft.padding.only(25, 7, 20, 7)
                         )
                     )
 
-            urlNombre = "https://tesis-kphi.onrender.com/api/clientes"
+            urlNombre = f"{urlEndpoint}/clientes"
             try:
                 response = requests.get(urlNombre)
                 response.raise_for_status()
                 data = response.json()
-                print(f"Código de estado Nombre: {response.status_code}")
-            except requests.exceptions.RequestException as e:
+
+            except requests.exceptions.RequestException as ex:
                 data = "Error al Obtener datos"
+
             for i in data:
                 if i['nombre'].lower() == campo.lower():
                     nombreClienteEquipoLabel = ft.Text(i['nombre'], color=ft.colors.WHITE, size=19, weight='w500')
@@ -757,25 +820,29 @@ def main(page: ft.page):
                                                     ft.Row([ft.Container(celularClienteEquipoLabel,
                                                                          padding=ft.padding.only(0)), ft.Container(
                                                         ft.ElevatedButton(
-                                                            content=ft.Text('Ver/Editar', color='white', weight='w100', ),
+                                                            content=ft.Text('Ver/Editar', color='white',
+                                                                            weight='w100', ),
                                                             bgcolor='#3F4450', on_hover=on_hover,
-                                                            on_click=lambda e, cliente=i: handle_ClickBusquedaEstadoCliente(e, cliente)))],
+                                                            on_click=lambda e,
+                                                                            cliente=i: handle_ClickBusquedaEstadoCliente(
+                                                                e, cliente)))],
                                                            alignment=ft.MainAxisAlignment.SPACE_BETWEEN),
                                                     ft.Container(emailClienteEquipoLabel, padding=ft.padding.only(0))
-                                                    ], spacing=0), width=560), border=ft.border.all(0.5, color='#8993A7'),
+                                                    ], spacing=0), width=560),
+                            border=ft.border.all(0.5, color='#8993A7'),
                             width=665, border_radius=3, padding=ft.padding.only(25, 7, 20, 7)
                         )
                     )
 
-                    urlPorNombre = f"https://tesis-kphi.onrender.com/api/equipos/cliente/{i['id']}"
+                    urlPorNombre = f"{urlEndpoint}/equipos/cliente/{i['id']}"
                     try:
                         response = requests.get(urlPorNombre)
                         response.raise_for_status()
                         data = response.json()
-                        print(f"Código de estado: {response.status_code}")
-                    except requests.exceptions.RequestException as e:
+
+                    except requests.exceptions.RequestException as ex:
                         data = "Error al Obtener datos"
-                        print("ERROR Obteniendo equipos")
+
 
                     if isinstance(data, list) and data:
                         for d in data:
@@ -817,29 +884,36 @@ def main(page: ft.page):
                                                                 alignment=ft.MainAxisAlignment.SPACE_BETWEEN),
                                                             ft.Container(observaciones,
                                                                          padding=ft.padding.only(0, -12)),
-                                                            ], spacing=0), width=560),
-                                    border=ft.border.all(0.5, color='#8993A7'),
+                                                            ], spacing=0), width=560), border=ft.border.all(0.5,
+                                                                                                            color='#8993A7'),
                                     width=665, border_radius=3, padding=ft.padding.only(25, 7, 20, 7)
                                 )
                             )
-
-
-
             resultados.append(
                 ft.Container(
-                    ft.Container(ft.Column([ft.Text("NO HAY MÁS RESULTADOS", color=ft.colors.WHITE, size=17, weight='w400')], spacing=0), width=560), border=ft.border.all(0.5, color='#8993A7'),
+                    ft.Container(ft.Column([ft.Text('SIN MÁS RESULTADOS')], spacing=0), width=560),
+                    border=ft.border.all(0.5, color='#8993A7'),
                     width=665, border_radius=3, padding=ft.padding.only(25, 7, 20, 7)
                 )
             )
+
             contenedorResultadoBusqueda.controls.clear()
             contenedorResultadoBusqueda.controls.extend(resultados)
             contenedorResultadoBusqueda.update()
+            page.update()
 
         ver_ResultadoBusqueda.open = True
         ver_ResultadoBusqueda.update()
+        end_time = timeit.default_timer()  # Finalizar tiempo de ejecución
+        cpu_usage_after = psutil.cpu_percent()  # Uso de CPU después de la solicitud
+        execution_time = end_time - start_time  # Tiempo total de ejecución en segundos
+        print(f"Tiempo de ejecución: {execution_time:.4f} segundos")
+        print(f"Uso de CPU antes: {cpu_usage_before}%")
+        print(f"Uso de CPU después: {cpu_usage_after}%")
 
     def buscarNombre(e, id):
-        url = f"https://tesis-kphi.onrender.com/api/cliente/{id}"
+
+        url = f"{urlEndpoint}/cliente/{id}"
         try:
             response = requests.get(url)
             response.raise_for_status()
@@ -852,7 +926,7 @@ def main(page: ft.page):
         return nombre
 
     def buscarEstado(e, campo):
-        url = f"https://tesis-kphi.onrender.com/api/equipos/estado/{campo}"
+        url = f"{urlEndpoint}/equipos/estado/{campo}"
         try:
             response = requests.get(url)
             response.raise_for_status()
@@ -923,14 +997,13 @@ def main(page: ft.page):
 
 # ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
     def eliminarEquipo(e, id_Equipo):
-        # Construye la URL con el ID del equipo
-        url = f"https://tesis-kphi.onrender.com/api/equipo/{id_Equipo}"
-
+        print(f"FUNCION [Eliminar Equipo]\n--------------------------------------------")
+        start_time = timeit.default_timer()  # Iniciar tiempo de ejecución
+        cpu_usage_before = psutil.cpu_percent()  # Uso de CPU antes de la solicitud
+        url = f"{urlEndpoint}/equipo/{id_Equipo}"
         try:
-            # Realiza la solicitud DELETE
             response = requests.delete(url)
-            response.raise_for_status()  # Lanza una excepción si hay un error en la solicitud
-            print(f"Equipo con ID {id_Equipo} eliminado correctamente.")
+            response.raise_for_status()
             contenedorEquiposListos.controls.clear()
             contenedorEquiposListos.controls.extend(leerClientesListo())
             contenedorEquiposListos.update()
@@ -940,8 +1013,14 @@ def main(page: ft.page):
         except requests.exceptions.RequestException as err:
             print(f"Error al eliminar el equipo con ID {id_Equipo}: {err}")
 
-        # Cierra el diálogo después de eliminar
         close_dlg(e)
+
+        end_time = timeit.default_timer()  # Finalizar tiempo de ejecución
+        cpu_usage_after = psutil.cpu_percent()  # Uso de CPU después de la solicitud
+        execution_time = end_time - start_time  # Tiempo total de ejecución en segundos
+        print(f"Tiempo de ejecución: {execution_time:.4f} segundos")
+        print(f"Uso de CPU antes: {cpu_usage_before}%")
+        print(f"Uso de CPU después: {cpu_usage_after}%")
 
     # Pestaña para confirmar borrado
     def dlg_modal(id_Equipo):
@@ -1074,10 +1153,11 @@ def main(page: ft.page):
     )
 
     def notificarEquipo(e, id_Equipo):
-        # Construye la URL con el ID del equipo
-        url = f"https://tesis-kphi.onrender.com/api/equipos/{id_Equipo}/notificar"
+        print(f"FUNCION [Notificar Equipo]\n--------------------------------------------")
+        start_time = timeit.default_timer()  # Iniciar tiempo de ejecución
+        cpu_usage_before = psutil.cpu_percent()  # Uso de CPU antes de la solicitud
+        url = f"{urlEndpoint}/equipos/{id_Equipo}/notificar"
         headers = {'Content-Type': 'application/json'}
-
         try:
             response = requests.post(url, headers=headers)
             if response.status_code == 200:
@@ -1085,8 +1165,13 @@ def main(page: ft.page):
             else:
                 open_NotificarFallo(e)
         except requests.exceptions.RequestException as e:
-            print(f"Error al realizar la solicitud: {e}")
             open_NotificarFallo(e)
+        end_time = timeit.default_timer()  # Finalizar tiempo de ejecución
+        cpu_usage_after = psutil.cpu_percent()  # Uso de CPU después de la solicitud
+        execution_time = end_time - start_time  # Tiempo total de ejecución en segundos
+        print(f"Tiempo de ejecución: {execution_time:.4f} segundos")
+        print(f"Uso de CPU antes: {cpu_usage_before}%")
+        print(f"Uso de CPU después: {cpu_usage_after}%")
 # ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
     # Header Principal
@@ -1118,7 +1203,7 @@ def main(page: ft.page):
         if nuevaObservacion.value == '':
             nuevaObservacion.value = observacionActualEdit.value
             nuevaObservacion.update()
-        url = "https://tesis-kphi.onrender.com/api/clientes"
+        url = f"{urlEndpoint}/clientes"
         try:
             response = requests.get(url)
             response.raise_for_status()
@@ -1133,9 +1218,8 @@ def main(page: ft.page):
                 ActualizarEquipo(cliente_id)
                 break
 
-
     def ActualizarEquipo(id):
-        url = f"https://tesis-kphi.onrender.com/api/equipo/{id_EquipoEdit.value}"
+        url = f"{urlEndpoint}/equipo/{id_EquipoEdit.value}"
         headers = {'Content-Type': 'application/json'}
         data = {
             "marca": equipoMarcaEdit.value,
@@ -1146,12 +1230,24 @@ def main(page: ft.page):
         }
 
         try:
+            start_time = timeit.default_timer()  # Iniciar tiempo de ejecución
+            cpu_usage_before = psutil.cpu_percent()  # Uso de CPU antes de la solicitud
+
             response = requests.put(url, json=data, headers=headers)
             response.raise_for_status()  # Verificar si la solicitud tuvo éxito
-            print("Equipo editado exitosamente")
+
+            end_time = timeit.default_timer()  # Finalizar tiempo de ejecución
+            cpu_usage_after = psutil.cpu_percent()  # Uso de CPU después de la solicitud
+            execution_time = end_time - start_time  # Tiempo total de ejecución en segundos
+
             open_ExitoModalEdit()
+            print("FUNCION ACTUALIZAR EQUIPO\n---------------------------------")
+            # Mostrar resultados de rendimiento
+            print(f"Tiempo de ejecución: {execution_time:.4f} segundos")
+            print(f"Uso de CPU antes: {cpu_usage_before}%")
+            print(f"Uso de CPU después: {cpu_usage_after}%")
+
         except requests.exceptions.RequestException as e:
-            print(e)
             open_ErrorModal(e)
 
     # Ya editanto
@@ -1226,54 +1322,46 @@ def main(page: ft.page):
         agregar_Equipo.update()
 
     def validarCliente(e):
-        url = "https://tesis-kphi.onrender.com/api/clientes"
+        url = f"{urlEndpoint}/clientes"
         try:
             response = requests.get(url)
             response.raise_for_status()
             data = response.json()
         except requests.exceptions.RequestException as e:
             print("Error al Obtener datos")
-
         for cliente in data:
             if cliente['nombre'] == nombreClienteNuevoEquipo.value:
                 cliente_id = cliente['id']
-                print(f"Si existe, ID del cliente: {cliente_id}")
                 registrarEquipo_PDF(cliente_id)
                 break
             else:
                 open_ErrorModal(e)
     def registrarEquipo_PDF(id):
+        print(f"FUNCION [Registrar Equipo con PDF]\n--------------------------------------------")
+        start_time = timeit.default_timer()  # Iniciar tiempo de ejecución
+        cpu_usage_before = psutil.cpu_percent()  # Uso de CPU antes de la solicitud
         if estadoNuevoEquipo.value == "":
             estadoNuevoEquipo.value = 'Ingresado'
-        url = "https://tesis-kphi.onrender.com/api/equipo"
+        url = f"{urlEndpoint}/equipo"
         headers = {'Content-Type': 'application/json'}
-        data = {
-            "marca": marcaNuevoEquipo.value,
-            "modelo": nombreNuevoEquipo.value,
-            "estado": estadoNuevoEquipo.value,
-            "id_cliente": id,
-            "observaciones": observacionNuevoEquipo.value,
-            "tipo": tipoNuevoEquipo.value,
-        }
+        data = {"marca": marcaNuevoEquipo.value,"modelo": nombreNuevoEquipo.value,"estado": estadoNuevoEquipo.value,"id_cliente": id,"observaciones": observacionNuevoEquipo.value,"tipo": tipoNuevoEquipo.value,}
         logo_path = "assets/logo.png"
         logo_name_path = "assets/logoName.png"
         try:
             response = requests.post(url, json=data, headers=headers)
             response.raise_for_status()  # Verificar si la solicitud tuvo éxito
-            print("Equipo creado exitosamente")
             data2 = response.json()
-            data = {
-                "id": data2['id'],
-                "marca": data2['marca'],
-                "modelo": data2['modelo'],
-                "estado": data2['estado'],
-                "nombre Cliente": nombreClienteNuevoEquipo.value,
-                "observaciones": data2['observaciones'],
-            }
-            crear_ficha_tecnica(f"C:/Users/{usuario_actual}/Desktop/ficha_tecnica_ingreso_{data2['id']}.pdf", data, logo_path, logo_name_path, telefono=00000)
+            data = {"id": data2['id'],"marca": data2['marca'],"modelo": data2['modelo'],"estado": data2['estado'],"nombre Cliente": nombreClienteNuevoEquipo.value,"observaciones": data2['observaciones'],}
             open_ExitoModal()
+            crear_ficha_tecnica(f"C:/Users/{usuario_actual}/Desktop/ficha_tecnica_ingreso_{data2['id']}.pdf", data, imageLogo, imageLogoName, telefono=00000)
         except requests.exceptions.RequestException as e:
             open_ErrorModal(e)
+        end_time = timeit.default_timer()  # Finalizar tiempo de ejecución
+        cpu_usage_after = psutil.cpu_percent()  # Uso de CPU después de la solicitud
+        execution_time = end_time - start_time  # Tiempo total de ejecución en segundos
+        print(f"Tiempo de ejecución: {execution_time:.4f} segundos")
+        print(f"Uso de CPU antes: {cpu_usage_before}%")
+        print(f"Uso de CPU después: {cpu_usage_after}%")
 
 
     # Formulario agregar computadora variables ----------------------------------------------------------------------
@@ -1357,7 +1445,10 @@ def main(page: ft.page):
 #--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
     # Pestaña de Clientes y sus funciones
     def leerClientesRegistrados():
-        url = "https://tesis-kphi.onrender.com/api/clientes"
+        print(f"FUNCION [Clientes Registrados]\n--------------------------------------------")
+        start_time = timeit.default_timer()  # Iniciar tiempo de ejecución
+        cpu_usage_before = psutil.cpu_percent()  # Uso de CPU antes de la solicitud
+        url = f"{urlEndpoint}/clientes"
         try:
             response = requests.get(url)
             response.raise_for_status()
@@ -1377,6 +1468,13 @@ def main(page: ft.page):
                     ], spacing=0), width=560),border=ft.border.all(0.5, color='#8993A7'), width=665, border_radius=3,padding=ft.padding.only(25, 7, 20, 7)
                 )
             )
+
+        end_time = timeit.default_timer()  # Finalizar tiempo de ejecución
+        cpu_usage_after = psutil.cpu_percent()  # Uso de CPU después de la solicitud
+        execution_time = end_time - start_time  # Tiempo total de ejecución en segundos
+        print(f"Tiempo de ejecución: {execution_time:.4f} segundos")
+        print(f"Uso de CPU antes: {cpu_usage_before}%")
+        print(f"Uso de CPU después: {cpu_usage_after}%")
         return clientes_registrados
 
     def show_agCliente(e):
@@ -1415,8 +1513,11 @@ def main(page: ft.page):
         )
 
     def eliminarCliente(e, id_Cliente):
+        print(f"FUNCION [Eliminar Cliente]\n--------------------------------------------")
+        start_time = timeit.default_timer()  # Iniciar tiempo de ejecución
+        cpu_usage_before = psutil.cpu_percent()  # Uso de CPU antes de la solicitud
         # Construye la URL con el ID del Cliente
-        url = f"https://tesis-kphi.onrender.com/api/cliente/{id_Cliente}"
+        url = f"{urlEndpoint}/cliente/{id_Cliente}"
 
         try:
             # Realiza la solicitud DELETE
@@ -1429,6 +1530,12 @@ def main(page: ft.page):
         except requests.exceptions.RequestException as err:
             print(f"Error al eliminar el Cliente con ID {id_Cliente}: {err}")
 
+        end_time = timeit.default_timer()  # Finalizar tiempo de ejecución
+        cpu_usage_after = psutil.cpu_percent()  # Uso de CPU después de la solicitud
+        execution_time = end_time - start_time  # Tiempo total de ejecución en segundos
+        print(f"Tiempo de ejecución: {execution_time:.4f} segundos")
+        print(f"Uso de CPU antes: {cpu_usage_before}%")
+        print(f"Uso de CPU después: {cpu_usage_after}%")
         # Cierra el diálogo después de eliminar
         close_dlg(e)
 
@@ -1445,17 +1552,15 @@ def main(page: ft.page):
         page.update()
 
     def registrarCliente(e):
-        url = "https://tesis-kphi.onrender.com/api/cliente"
+        print(f"FUNCION [Registrar Cliente]\n--------------------------------------------")
+        start_time = timeit.default_timer()  # Iniciar tiempo de ejecución
+        cpu_usage_before = psutil.cpu_percent()  # Uso de CPU antes de la solicitud
+        url = f"{urlEndpoint}/cliente"
         headers = {'Content-Type': 'application/json'}
-        data = {
-            "correo": correoNuevoCliente.value,
-            "nombre": nombreNuevoCliente.value,
-            "telefono": celulardelNuevoCliente.value,
-        }
+        data = {"correo": correoNuevoCliente.value,"nombre": nombreNuevoCliente.value,"telefono": celulardelNuevoCliente.value,}
         try:
             response = requests.post(url, json=data, headers=headers)
             response.raise_for_status()  # Verificar si la solicitud tuvo éxito
-            print("Cliente creado exitosamente")
             contenedorListarClientes.controls.clear()
             contenedorListarClientes.controls.extend(leerClientesRegistrados())
             contenedorListarClientes.update()
@@ -1465,6 +1570,13 @@ def main(page: ft.page):
             close_agCliente(e)
         except requests.exceptions.RequestException as e:
             labelCorreoCliente.value = 'Error en la solicitud'
+
+        end_time = timeit.default_timer()  # Finalizar tiempo de ejecución
+        cpu_usage_after = psutil.cpu_percent()  # Uso de CPU después de la solicitud
+        execution_time = end_time - start_time  # Tiempo total de ejecución en segundos
+        print(f"Tiempo de ejecución: {execution_time:.4f} segundos")
+        print(f"Uso de CPU antes: {cpu_usage_before}%")
+        print(f"Uso de CPU después: {cpu_usage_after}%")
 
 
 
@@ -1490,7 +1602,7 @@ def main(page: ft.page):
                                          spans=[ft.TextSpan("Cliente", ft.TextStyle(color='#3EC99D'))]),
                                  alignment=ft.alignment.center),
 
-                    # Nombre  del Nuevo cliente
+                    # Nombre del Nuevo cliente
                     ft.Container(nombreNuevoCliente, bgcolor=ft.colors.WHITE10),
 
                     # Correo electronico y celular del cliente
@@ -1570,22 +1682,19 @@ def main(page: ft.page):
 
         page.update()
     def ActualizarCliente(e):
+        print(f"FUNCION [Actualizar Cliente]\n--------------------------------------------")
+        start_time = timeit.default_timer()  # Iniciar tiempo de ejecución
+        cpu_usage_before = psutil.cpu_percent()  # Uso de CPU antes de la solicitud
         page.client_storage.set("nombreCliente", nombreClienteEditar.value,)
         page.client_storage.set("correoCliente", correoClienteEditar.value,)
         page.client_storage.set("telefonoCliente", celularClienteEditar.value,)
         id = id_ClienteEdit.value
-        url = f"https://tesis-kphi.onrender.com/api/cliente/{id}"
+        url = f"{urlEndpoint}/cliente/{id}"
         headers = {'Content-Type': 'application/json'}
-        data = {
-            "correo": correoClienteEditar.value,
-            "nombre": nombreClienteEditar.value,
-            "telefono": celularClienteEditar.value,
-        }
-
+        data = {"correo": correoClienteEditar.value,"nombre": nombreClienteEditar.value,"telefono": celularClienteEditar.value,}
         try:
             response = requests.put(url, json=data, headers=headers)
             response.raise_for_status()  # Verificar si la solicitud tuvo éxito
-            print("Cliente editado exitosamente")
             contenedorListarClientes.controls.clear()
             contenedorListarClientes.controls.extend(leerClientesRegistrados())
             contenedorListarClientes.update()
@@ -1597,8 +1706,14 @@ def main(page: ft.page):
             page.update()
             cancelarEditClienteFormulario(e)
         except requests.exceptions.RequestException as e:
-            print(e)
             labelEditarCliente.value = 'Error Actualizando Datos'
+
+        end_time = timeit.default_timer()  # Finalizar tiempo de ejecución
+        cpu_usage_after = psutil.cpu_percent()  # Uso de CPU después de la solicitud
+        execution_time = end_time - start_time  # Tiempo total de ejecución en segundos
+        print(f"Tiempo de ejecución: {execution_time:.4f} segundos")
+        print(f"Uso de CPU antes: {cpu_usage_before}%")
+        print(f"Uso de CPU después: {cpu_usage_after}%")
 
 
     def whatsapp_redirect(e):
@@ -1615,50 +1730,68 @@ def main(page: ft.page):
         nombreClienteNuevoEquipo.update()
 
     def leerEquiposCliente(e, id):
-        url = f'https://tesis-kphi.onrender.com/api/equipos/cliente/{id}'
+        print(f"FUNCION [Leer Equipo de un Cliente]\n--------------------------------------------")
+        start_time = timeit.default_timer()  # Iniciar tiempo de ejecución
+        cpu_usage_before = psutil.cpu_percent()  # Uso de CPU antes de la solicitud
+        url = f'{urlEndpoint}/equipos/cliente/{id}'
         try:
             response = requests.get(url)
             response.raise_for_status()
             data = response.json()
-            nombre_cliente = page.client_storage.get("nombreClienteEdit")
-            for item in data:
-                item["nombre_cliente"] = nombre_cliente
+            if response.status_code == 200:
+                nombre_cliente = page.client_storage.get("nombreClienteEdit")
+                for item in data:
+                    item["nombre_cliente"] = nombre_cliente
 
             print("Obteniendo Datos")
         except requests.exceptions.RequestException as e:
             data = "Error al Obtener datos"
             print("ERROR Obteniendo equipos")
         equipos_cliente = []
-        for i in data:
-            estadoJson = i['estado']
-            if estadoJson.lower() == 'listo':
-                estadoEquipoLabel = ft.Text("En estado: ", color=ft.colors.WHITE, size=17, weight='w400', spans=[
-                    ft.TextSpan(estadoJson, ft.TextStyle(color='#3EC99D', weight='w500'))])
-            else:
-                estadoEquipoLabel = ft.Text("En estado: ", color=ft.colors.WHITE, size=17, weight='w400',spans=[ft.TextSpan(estadoJson, ft.TextStyle(color='#FF914D', weight='w500'))])
-            nombreEquipoLabel = ft.Text(f"{i['marca']} {i['modelo']}", color=ft.colors.WHITE, size=19, weight='w500')
-            observaciones = ft.Text("Observaciones:", color='#3EC99D', size=17, weight='w400',spans=[ft.TextSpan(i['observaciones'], ft.TextStyle(color=ft.colors.WHITE, weight='w400'))])
+        if response.status_code == 200:
+            for i in data:
+                estadoJson = i['estado']
+                if estadoJson.lower() == 'listo':
+                    estadoEquipoLabel = ft.Text("En estado: ", color=ft.colors.WHITE, size=17, weight='w400', spans=[
+                        ft.TextSpan(estadoJson, ft.TextStyle(color='#3EC99D', weight='w500'))])
+                else:
+                    estadoEquipoLabel = ft.Text("En estado: ", color=ft.colors.WHITE, size=17, weight='w400',spans=[ft.TextSpan(estadoJson, ft.TextStyle(color='#FF914D', weight='w500'))])
+                nombreEquipoLabel = ft.Text(f"{i['marca']} {i['modelo']}", color=ft.colors.WHITE, size=19, weight='w500')
+                observaciones = ft.Text("Observaciones:", color='#3EC99D', size=17, weight='w400',spans=[ft.TextSpan(i['observaciones'], ft.TextStyle(color=ft.colors.WHITE, weight='w400'))])
 
+                equipos_cliente.append(
+                    ft.Container(
+                        ft.Container(ft.Column([ft.Row([nombreEquipoLabel,
+                                                        ft.IconButton(icon=ft.icons.DELETE_FOREVER_ROUNDED,
+                                                                      icon_color="#3EC99D", icon_size=20,
+                                                                      tooltip="Borrar Equipo",
+                                                                      on_click=lambda e, equipo=i: open_dlg_modal(e, equipo)), ],
+                                                       alignment=ft.MainAxisAlignment.SPACE_BETWEEN),
+                                                ft.Row(
+                                                    [ft.Container(estadoEquipoLabel, padding=ft.padding.only(0, -20)),
+                                                     ft.Container(ft.ElevatedButton(
+                                                         content=ft.Text('Ver/Editar', color='white', weight='w100', ),
+                                                         bgcolor='#3F4450', on_hover=on_hover,
+                                                         on_click=lambda e, equipo=i: handle_Click(e, equipo)))],
+                                                    alignment=ft.MainAxisAlignment.SPACE_BETWEEN),
+                                                ft.Container(observaciones, padding=ft.padding.only(0,-12))
+                                                ], spacing=0), width=560), border=ft.border.all(0.5, color='#8993A7'),
+                        width=665, border_radius=3, padding=ft.padding.only(25, 7, 20, 7)
+                    )
+                )
+        else:
             equipos_cliente.append(
                 ft.Container(
-                    ft.Container(ft.Column([ft.Row([nombreEquipoLabel,
-                                                    ft.IconButton(icon=ft.icons.DELETE_FOREVER_ROUNDED,
-                                                                  icon_color="#3EC99D", icon_size=20,
-                                                                  tooltip="Borrar Equipo",
-                                                                  on_click=lambda e, equipo=i: open_dlg_modal(e, equipo)), ],
-                                                   alignment=ft.MainAxisAlignment.SPACE_BETWEEN),
-                                            ft.Row(
-                                                [ft.Container(estadoEquipoLabel, padding=ft.padding.only(0, -20)),
-                                                 ft.Container(ft.ElevatedButton(
-                                                     content=ft.Text('Ver/Editar', color='white', weight='w100', ),
-                                                     bgcolor='#3F4450', on_hover=on_hover,
-                                                     on_click=lambda e, equipo=i: handle_Click(e, equipo)))],
-                                                alignment=ft.MainAxisAlignment.SPACE_BETWEEN),
-                                            ft.Container(observaciones, padding=ft.padding.only(0,-12))
-                                            ], spacing=0), width=560), border=ft.border.all(0.5, color='#8993A7'),
+                    ft.Container(ft.Column([ft.Text('SIN EQUIPOS')], spacing=0), width=560), border=ft.border.all(0.5, color='#8993A7'),
                     width=665, border_radius=3, padding=ft.padding.only(25, 7, 20, 7)
                 )
             )
+        end_time = timeit.default_timer()  # Finalizar tiempo de ejecución
+        cpu_usage_after = psutil.cpu_percent()  # Uso de CPU después de la solicitud
+        execution_time = end_time - start_time  # Tiempo total de ejecución en segundos
+        print(f"Tiempo de ejecución: {execution_time:.4f} segundos")
+        print(f"Uso de CPU antes: {cpu_usage_before}%")
+        print(f"Uso de CPU después: {cpu_usage_after}%")
         return equipos_cliente
 
 
@@ -1756,7 +1889,10 @@ def main(page: ft.page):
 
     # Crear tarjetas de información de los equipos para historial
     def leerEquiposHistorial():
-        url = "https://tesis-kphi.onrender.com/api/equipos"
+        print(f"FUNCION [Pestaña Historial Equipos]\n--------------------------------------------")
+        start_time = timeit.default_timer()  # Iniciar tiempo de ejecución
+        cpu_usage_before = psutil.cpu_percent()  # Uso de CPU antes de la solicitud
+        url = f"{urlEndpoint}/equipos"
         try:
             response = requests.get(url)
             response.raise_for_status()
@@ -1785,43 +1921,36 @@ def main(page: ft.page):
                     width=710, border_radius=3, padding=ft.padding.only(25, 7, 20, 7)
                 )
             )
+        end_time = timeit.default_timer()  # Finalizar tiempo de ejecución
+        cpu_usage_after = psutil.cpu_percent()  # Uso de CPU después de la solicitud
+        execution_time = end_time - start_time  # Tiempo total de ejecución en segundos
+        print(f"Tiempo de ejecución: {execution_time:.4f} segundos")
+        print(f"Uso de CPU antes: {cpu_usage_before}%")
+        print(f"Uso de CPU después: {cpu_usage_after}%")
         return equipos_historial
 
 
 
     def leerHistorial(e, id):
-        url = f'https://tesis-kphi.onrender.com/api/mantenimiento/equipo/{id}'
+
+        url = f'{urlEndpoint}/mantenimiento/equipo/{id}'
         try:
             response = requests.get(url)
             response.raise_for_status()
             data = response.json()
-
-            print("Obteniendo Datos")
             mantenimientos = data.get('mantenimientos', [])
             equipos_historial = []
             for mantenimiento in mantenimientos:
                 estado_actual = mantenimiento.get("estado_actual")
                 descripcion = mantenimiento.get("descripcion")
                 fecha = mantenimiento.get("fecha")
-
-                fechaHistorial = ft.Text("Fecha: ", color='#3EC99D', size=17, weight='w400', spans=[
-                    ft.TextSpan(fecha, ft.TextStyle(color=ft.colors.WHITE, weight='w400'))])
-
-                estadoHistorial = ft.Text("Estado: ", color='#3EC99D', size=16, weight='w400', spans=[
-                    ft.TextSpan(estado_actual, ft.TextStyle(color=ft.colors.WHITE, weight='w300'))])
-
-                descripcionHistorial = ft.Text("Observacion Dada: ", color='#FF914D', size=16, weight='w400', spans=[
-                    ft.TextSpan(descripcion, ft.TextStyle(color=ft.colors.WHITE, weight='w300'))])
-
-                equipos_historial.append(
-                    ft.Container(
-                        ft.Container(ft.Column([
+                fechaHistorial = ft.Text("Fecha: ", color='#3EC99D', size=17, weight='w400', spans=[ft.TextSpan(fecha, ft.TextStyle(color=ft.colors.WHITE, weight='w400'))])
+                estadoHistorial = ft.Text("Estado: ", color='#3EC99D', size=16, weight='w400', spans=[ft.TextSpan(estado_actual, ft.TextStyle(color=ft.colors.WHITE, weight='w300'))])
+                descripcionHistorial = ft.Text("Observacion Dada: ", color='#FF914D', size=16, weight='w400', spans=[ft.TextSpan(descripcion, ft.TextStyle(color=ft.colors.WHITE, weight='w300'))])
+                equipos_historial.append(ft.Container(ft.Container(ft.Column([
                             ft.Container(fechaHistorial, padding=ft.padding.only(0, -12)),
                             ft.Container(estadoHistorial, padding=ft.padding.only(0, -12)),
-                            ft.Container(descripcionHistorial, padding=ft.padding.only(0, -12)),
-                                                ], spacing=15), width=560), border=ft.border.all(0.5, color='#8993A7'),
-                        width=665, border_radius=3, padding=ft.padding.only(25, 15, 20, 7)
-                    )
+                            ft.Container(descripcionHistorial, padding=ft.padding.only(0, -12)),], spacing=15), width=560), border=ft.border.all(0.5, color='#8993A7'),width=665, border_radius=3, padding=ft.padding.only(25, 15, 20, 7))
                 )
         except requests.exceptions.RequestException as e:
             print(f"ERROR Obteniendo equipos {e}")
@@ -1839,11 +1968,15 @@ def main(page: ft.page):
         ver_historialEquipo.open = False
         ver_historialEquipo.update()
     def show_bsHistorial(e, equipo):
+        print(f"FUNCION [Ver historial de 1 equipo]\n--------------------------------------------")
+        start_time = timeit.default_timer()  # Iniciar tiempo de ejecución
+        cpu_usage_before = psutil.cpu_percent()  # Uso de CPU antes de la solicitud
+
         nombreEquipoHist.value = f"{equipo['marca']} {equipo['modelo']}"
         id_EquipoHist.value = equipo['id']
         nombreClienteHist.value = equipo['nombre_cliente']
         page.client_storage.set("equipoCache", equipo)
-        url = "https://tesis-kphi.onrender.com/api/clientes"
+        url = f"{urlEndpoint}/clientes"
         try:
             response = requests.get(url)
             response.raise_for_status()
@@ -1853,7 +1986,7 @@ def main(page: ft.page):
         for cliente in data:
             if cliente['nombre'] == equipo['nombre_cliente']:
                 cliente_id = cliente['id']
-                url2 = f"https://tesis-kphi.onrender.com/api/cliente/{cliente_id}"
+                url2 = f"{urlEndpoint}/cliente/{cliente_id}"
                 try:
                     response = requests.get(url2)
                     response.raise_for_status()
@@ -1870,6 +2003,12 @@ def main(page: ft.page):
         contenedorRegistroHistorico.update()
         ver_historialEquipo.open = True
         ver_historialEquipo.update()
+        end_time = timeit.default_timer()  # Finalizar tiempo de ejecución
+        cpu_usage_after = psutil.cpu_percent()  # Uso de CPU después de la solicitud
+        execution_time = end_time - start_time  # Tiempo total de ejecución en segundos
+        print(f"Tiempo de ejecución: {execution_time:.4f} segundos")
+        print(f"Uso de CPU antes: {cpu_usage_before}%")
+        print(f"Uso de CPU después: {cpu_usage_after}%")
 
     contenedorHistorialEquipos = ft.Column(controls=leerEquiposHistorial(), scroll=ft.ScrollMode.ALWAYS, height=415)
 
@@ -2020,7 +2159,7 @@ def main(page: ft.page):
         page.update()
 
     def validarAdminEditar(e):
-        url = "https://tesis-kphi.onrender.com/api/admin/login"
+        url = f"{urlEndpoint}/admin/login"
         headers = {'Content-Type': 'application/json'}
         data = {
             "correo": page.client_storage.get('correo'),
@@ -2046,27 +2185,28 @@ def main(page: ft.page):
 
 
     def ActualizarAdmin(e, id):
-        url = f"https://tesis-kphi.onrender.com/api/admin/{id}"
+        print(f"FUNCION [Actualizar Información Admin]\n--------------------------------------------")
+        start_time = timeit.default_timer()  # Iniciar tiempo de ejecución
+        cpu_usage_before = psutil.cpu_percent()  # Uso de CPU antes de la solicitud
+        url = f"{urlEndpoint}/admin/{id}"
         headers = {'Content-Type': 'application/json'}
-        data = {
-            "correo": correoAdminText.value,
-            "nombre": nombreAdminText.value,
-            "telefono": celularAdminText.value,
-            "password": passwordAdminText.value,
-        }
-
+        data = {"correo": correoAdminText.value,"nombre": nombreAdminText.value,"telefono": celularAdminText.value,"password": passwordAdminText.value,}
         try:
             response = requests.put(url, json=data, headers=headers)
             response.raise_for_status()  # Verificar si la solicitud tuvo éxito
-            print("Datos editados exitosamente")
             page.client_storage.set("nombre", nombreAdminText.value)
             page.client_storage.set("telefono", celularAdminText.value)
             page.client_storage.set("correo", correoAdminText.value)
             page.update()
             cancelarEditarInformacionAdmin(e)
         except requests.exceptions.RequestException as e:
-            print(e)
             labelPasAdmin.value ='Error al Actualizar'
+        end_time = timeit.default_timer()  # Finalizar tiempo de ejecución
+        cpu_usage_after = psutil.cpu_percent()  # Uso de CPU después de la solicitud
+        execution_time = end_time - start_time  # Tiempo total de ejecución en segundos
+        print(f"Tiempo de ejecución: {execution_time:.4f} segundos")
+        print(f"Uso de CPU antes: {cpu_usage_before}%")
+        print(f"Uso de CPU después: {cpu_usage_after}%")
 
     def ActualizarPass(e):
         passActualText.disabled = False
@@ -2101,7 +2241,10 @@ def main(page: ft.page):
         labelNuevaPass.update()
 
     def validarAdminPassEditar(e):
-        url = "https://tesis-kphi.onrender.com/api/admin/login"
+        print(f"FUNCION [Cambiar Contraseña]\n--------------------------------------------")
+        start_time = timeit.default_timer()  # Iniciar tiempo de ejecución
+        cpu_usage_before = psutil.cpu_percent()  # Uso de CPU antes de la solicitud
+        url = f"{urlEndpoint}/admin/login"
         headers = {'Content-Type': 'application/json'}
         data = {
             "correo": page.client_storage.get('correo'),
@@ -2123,20 +2266,19 @@ def main(page: ft.page):
             labelNuevaPass.value = "Error con el servidor"
             passActualText.value = ''
             page.update()
+        end_time = timeit.default_timer()  # Finalizar tiempo de ejecución
+        cpu_usage_after = psutil.cpu_percent()  # Uso de CPU después de la solicitud
+        execution_time = end_time - start_time  # Tiempo total de ejecución en segundos
+        print(f"Tiempo de ejecución: {execution_time:.4f} segundos")
+        print(f"Uso de CPU antes: {cpu_usage_before}%")
+        print(f"Uso de CPU después: {cpu_usage_after}%")
     def ActualizarPassAdmin(e, id):
-        url = f"https://tesis-kphi.onrender.com/api/admin/{id}"
+        url = f"{urlEndpoint}/admin/{id}"
         headers = {'Content-Type': 'application/json'}
-        data = {
-            "correo": page.client_storage.get('correo'),
-            "nombre": page.client_storage.get('nombre'),
-            "telefono": page.client_storage.get('telefono'),
-            "password": passNuevaText.value,
-        }
-
+        data = {"correo": page.client_storage.get('correo'),"nombre": page.client_storage.get('nombre'),"telefono": page.client_storage.get('telefono'),"password": passNuevaText.value,}
         try:
             response = requests.put(url, json=data, headers=headers)
             response.raise_for_status()  # Verificar si la solicitud tuvo éxito
-            print("Contraseña editada exitosamente")
             passActualText.value = ''
             passActualText.update()
             passNuevaText.value = ''
@@ -2145,11 +2287,10 @@ def main(page: ft.page):
             passNuevaConf.update()
             CancelarActualizarPass(e)
         except requests.exceptions.RequestException as e:
-            print(e)
             labelNuevaPass.value ='Error al Actualizar'
 
 
-    nombreAdminText = ft.TextField(width=630, height=40, label="Nombre del Cliente", color='#3F4450',
+    nombreAdminText = ft.TextField(width=630, height=40, label="Nombre del Técnico Administrador", color='#3F4450',
                                 border_color='#3F4450', border_radius=20, label_style=ft.TextStyle(color='#3F4450'),
                                  focused_border_color='#3EC99D', read_only=True)
     celularAdminText = ft.TextField(width=310, height=40, label="Celular del Contacto", color='#3F4450',
@@ -2254,6 +2395,7 @@ def main(page: ft.page):
     page.overlay.append(agregar_Cliente)
     page.overlay.append(ver_historialEquipo)
     page.overlay.append(ver_ResultadoBusqueda)
+    page.theme_mode = ft.ThemeMode.DARK
     page.add(
         ventana
     )
